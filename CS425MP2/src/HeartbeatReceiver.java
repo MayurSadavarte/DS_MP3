@@ -1,3 +1,5 @@
+
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -16,11 +18,10 @@ public class HeartbeatReceiver implements Runnable {
 	public void run() {
 		byte[] recvData = new byte[1024];
 		DatagramPacket recvPacket = new DatagramPacket(recvData,recvData.length);
-		DatagramSocket incoming = null;
 		
 		
 		try {
-			incoming = new DatagramSocket(Contact.HEARTBEAT_PORT);
+			m.heartbeat_sock = new DatagramSocket(Machine.HEARTBEAT_PORT);
 		} catch (SocketException e) {
 			e.printStackTrace();
 		}
@@ -29,9 +30,11 @@ public class HeartbeatReceiver implements Runnable {
 			String recvMsg = null;
 			try {
 				//System.out.println("dsadasdasdasdad");
-				incoming.setSoTimeout(3000);
-				incoming.receive(recvPacket);
+				m.heartbeat_sock.setSoTimeout(3000);
+				m.heartbeat_sock.receive(recvPacket);
 				recvMsg = new String(recvPacket.getData());
+				//verify whether it is the correct heartbeat from the correct node!!
+				
 				//System.out.println("HB from "+recvMsg);
 			} catch (SocketTimeoutException e) {
 				
@@ -56,7 +59,7 @@ public class HeartbeatReceiver implements Runnable {
 				String rmvIP = memberList.remove((index - 1 + memberList.size()) % memberList.size());
 				index = memberList.indexOf(myIP);
 				String cIP = m.getContactIP();
-				m.sendMsg(cIP, rmvIP, Contact.CONTACT_REMOVE_PORT);
+				m.sendMsg(m.membership_sock, cIP, rmvIP, Machine.MEMBERSHIP_PORT);
 				
 				try {
 					WriteLog.writelog(m.getMyIP(), "send to "+ cIP+ " rmvIP: "+ rmvIP);
@@ -69,7 +72,7 @@ public class HeartbeatReceiver implements Runnable {
 				//if(memberList.size()>1){
 					String prevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
 					String msg = "R" + rmvIP;
-					m.sendMsg(prevIP, msg, Contact.ADD_AND_REMOVE_PORT);
+					m.sendMsg(m.membership_sock, prevIP, msg, Machine.MEMBERSHIP_PORT);
 					
 					try {
 						WriteLog.writelog(m.getMyIP(), "RMV send to "+ prevIP+ "msg: "+ msg);

@@ -1,3 +1,5 @@
+
+
 import java.util.Scanner;
 import java.util.Vector;
 
@@ -22,11 +24,11 @@ public class VoluntaryLeave implements Runnable {
 					Vector<String> list = m.getMemberList();
 					int index = list.indexOf(ip);
 
-					m.sendMsg(
+					m.sendMsg(m.membership_sock,
 							list.get((index - 1 + list.size()) % list.size()),
-							"R" + ip, Contact.ADD_AND_REMOVE_PORT);
+							"R" + ip, Machine.MEMBERSHIP_PORT);
 				}
-				m.sendMsg(contactIP, ip, Contact.CONTACT_REMOVE_PORT);
+				m.sendMsg(m.membership_sock, contactIP, ip, Machine.MEMBERSHIP_PORT);
 				System.exit(0);
 			}
 		}

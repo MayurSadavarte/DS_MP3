@@ -1,3 +1,5 @@
+
+
 import java.util.Random;
 import java.util.Vector;
 
@@ -23,7 +25,7 @@ public class HeartbeatSender implements Runnable{
 		//	Random g = new Random(4545556);
 		//	double r = g.nextDouble(); 
 		//	if(r>0.15){
-				m.sendMsg(nextIP, myIP, Contact.HEARTBEAT_PORT);
+				m.sendMsg(m.membership_sock, nextIP, myIP, Machine.HEARTBEAT_PORT);
 		//	}
 			
 			//System.out.println("send HB to "+ nextIP);

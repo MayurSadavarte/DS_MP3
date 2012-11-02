@@ -1,38 +1,43 @@
+
 import java.io.*;
 import java.net.*;
+import java.util.HashMap;
 import java.util.Vector;
+
 
 import querier.Server;
 
 public class Machine {
 
+	private boolean flag;
+	public HashMap<String, Integer> map;
+	public static final int MEMBERSHIP_PORT = 8889;
+	public static final int FILE_OPERATIONS_PORT = 8891;
+	//public static final int DEFAULT_CONTACT_PORT = 8888;
+	public static final int HEARTBEAT_PORT = 8890;
+	public static final int QUERY_PORT = 10000;
 	
-	private DatagramSocket incoming;
-	private DatagramSocket outgoing;
-	private Vector<String> memberList;
+	public DatagramSocket membership_sock;
+	public DatagramSocket heartbeat_sock;
+	public DatagramSocket outgoing;
+	public Vector<String> memberList;
 	private String contactIP;
-	private static String myIP;
-	DatagramPacket recvPacket;
+	public static String myIP;
 	
 	
 	public Machine() {
-		incoming = null;
+		membership_sock = null;
 		outgoing = null;
 		memberList = null;
+		map = new HashMap<String, Integer>();
+		flag = true;
+		
 		try {
 			myIP = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
-		byte[] recvData = new byte[1024];
-		recvPacket = new DatagramPacket(recvData,
-				recvData.length);
-		try {
-			incoming = new DatagramSocket(Contact.ADD_AND_REMOVE_PORT);
-		} catch (SocketException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		
 
 	}
 
@@ -45,131 +50,49 @@ public class Machine {
 	 *            port number
 	 */
 	@SuppressWarnings("unchecked")
-	public void getMemberlistFromIP(String ip, int port) {
+	public void getMemberlistFromIP(String ip) {
+		String joinMsg;
+		String recvMsg = null;
+		DatagramPacket recvPacket;
+		byte[] recvData = new byte[1024];
+		
+		joinMsg = 'J'+myIP;
+		sendMsg(membership_sock, ip, joinMsg, Machine.MEMBERSHIP_PORT);
+		
+		recvPacket = new DatagramPacket(recvData,recvData.length);
 		try {
 			contactIP = ip;
-			Socket s = new Socket(ip, port);
-			ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
-			memberList = (Vector<String>) ois.readObject();
 			
 			WriteLog.writelog(myIP, "received ML");
 			WriteLog.printList2Log(myIP, memberList);
 			
-			s.close();
+			membership_sock.receive(recvPacket);
+			
+			//need to extract membership list from recvPacket
+			
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
 		}
-	}
-
-	/**
-	 * get msg string from UDP
-	 * 
-	 * @return
-	 */
-	public String getMsgFromUDP() {
-		String recvMsg = null;
-		try {
-			
-			incoming.receive(recvPacket);
-			recvMsg = new String(recvPacket.getData());
-			
-			WriteLog.writelog(myIP, "received from UDP "+recvMsg);
-			
-			//System.out.println(recvMsg);
-		} catch (SocketException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		//recvMsg = new String(recvPacket.getData());
 		
-		byte[] recvData = new byte[1024];
-		recvPacket.setData(recvData);
-		
-		return recvMsg;
+		//need to review - need to set memberlist using recvPkt
 	}
 
-	/**
-	 * process received msg
-	 * 
-	 * @param msg
-	 */
-	public void processMsg(String msg) {
-		if (msg.charAt(0) == 'A') {
-			String ip = (msg.substring(1)).trim();
-			boolean contains = false;
-			
-			for(int i=0; i<memberList.size(); i++){
-//				System.out.println(memberList.get(i));
-				if(memberList.get(i).equals(ip) ){
-					contains = true;
-				//	System.out.println("!!!!!!!!!!!!!");
-					break;
-				}
-			}
-			
-			
-			
-			if (!contains) {
-				//System.out.println("999999999999!!!!!!!");
-				try {
-					WriteLog.writelog(myIP, "adddddddddddddd " + ip);
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				memberList.add(ip);
-				int index = memberList.indexOf(myIP);
-				String nextIP = memberList.get((index + 1) % memberList.size());
-				sendMsg(nextIP, msg, Contact.ADD_AND_REMOVE_PORT);
-				String nextnextIP = memberList.get((index + 2) % memberList.size());
-				sendMsg(nextnextIP, msg, Contact.ADD_AND_REMOVE_PORT);				
-				
-				try {
-					WriteLog.printList2Log(myIP, memberList);
-					WriteLog.writelog(myIP, "send to "+nextIP+" msg is " + msg);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
-		else if (msg.charAt(0) == 'R'){
-			String ip = msg.substring(1).trim();
-			if (memberList.contains(ip)) {
-				memberList.remove(ip);
-				int index = memberList.indexOf(myIP);
-				String prevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
-				sendMsg(prevIP, msg, Contact.ADD_AND_REMOVE_PORT);
-				String prevprevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
-				sendMsg(prevprevIP, msg, Contact.ADD_AND_REMOVE_PORT);
-				
-				try {
-					WriteLog.printList2Log(myIP, memberList);
-					WriteLog.writelog(myIP, "send to "+prevIP+" msg is " + msg);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-
+	
+	
 	/**
 	 * send an add message to the first machine in the system
 	 */
 	@SuppressWarnings("resource")
-	public void sendMsg(String ip, String msg, int portN) {
+	public void sendMsg(DatagramSocket sock, String ip, String msg, int portN) {
 		try {
-			DatagramSocket dsClient = new DatagramSocket();
 			InetAddress ipAddr = InetAddress.getByName(ip);
 			byte[] sendData = msg.getBytes();
 			DatagramPacket sendPacket = new DatagramPacket(sendData,
 					sendData.length, ipAddr, portN);
-			dsClient.send(sendPacket);
+			sock.send(sendPacket);
 		} catch (SocketException e) {
 			e.printStackTrace();
 		} catch (UnknownHostException e) {
@@ -180,16 +103,28 @@ public class Machine {
 	}
 	
 	
+	
+	/**
+	 * start the server socket and listen to membership_sock connection request
+	 */
+	public void startAddRem() {
+		
+		Runnable runnable = new ContactAddRemove(this);
+		Thread thread = new Thread(runnable);
+		thread.start();
+	}
+	
 
 	public static void main(String[] args) {
 		Machine m = new Machine();
+		m.startAddRem();
 		//join
-		m.getMemberlistFromIP(args[0], 8888);
+		m.getMemberlistFromIP(args[0]);
+		
 		// r (String s : m.getMemberList())
 		// System.out.println(s);
 		
 		try {
-		
 			WriteLog.printList2Log(myIP, m.memberList);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -206,19 +141,14 @@ public class Machine {
 		Runnable commandC = new VoluntaryLeave(m);
 		Thread threadC = new Thread(commandC);
 		threadC.start();
-		
-		while(true){
-			String msg = m.getMsgFromUDP();
-			m.processMsg(msg);
-		}
 	}
 
-	public DatagramSocket getIncoming() {
-		return incoming;
+	public DatagramSocket getmembership_sock() {
+		return membership_sock;
 	}
 
-	public void setIncoming(DatagramSocket incoming) {
-		this.incoming = incoming;
+	public void setmembership_sock(DatagramSocket membership_sock) {
+		this.membership_sock = membership_sock;
 	}
 
 	public DatagramSocket getOutgoing() {
