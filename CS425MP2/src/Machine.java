@@ -27,6 +27,7 @@ public class Machine {
 	private String contactIP;
 	public static String myIP;
 	public boolean master = false;
+	public FileReplication FileReplicator;
 	
 	public Machine(boolean mflag) {
 		master = mflag;
@@ -139,9 +140,8 @@ public class Machine {
 	
 
 	public void startFileReplication() {
-		Runnable runnable = new FileReplication(this);
-		Thread thread = new Thread(runnable);
-		thread.start();
+		FileReplicator = new FileReplication(this);
+		FileReplicator.start();
 	}
 	
 	public static void main(String[] args) {
@@ -158,11 +158,15 @@ public class Machine {
 		//join
 		if (m.master)
 		{
-		//TODO	
+		//TODO - need to review the file_node_map.put call
+			m.memberList.add(myIP);
+			//m.file_node_map.put(null, m.memberList);
+			m.node_file_map.put(myIP, null);
 		}
 		else
 		{
 			m.getMemberlistFromIP(args[0]);
+			m.node_file_map.put(myIP, null);
 		}
 		// r (String s : m.getMemberList())
 		// System.out.println(s);

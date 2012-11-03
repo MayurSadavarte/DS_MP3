@@ -9,10 +9,23 @@ import java.util.Vector;
 
 public class FileReplication implements Runnable {
 	private Machine m;
+	public FileTransfer FileWorker;
 	
 	public FileReplication(Machine machine)
 	{
 		m=machine;		
+	}
+	
+	public void balanceFiles()
+	{
+		// TODO - called from ContactAddRemove when any node adds or leaves the network, used only by master
+		
+	}
+	
+	public void start()
+	{
+		Thread fr_thread = new Thread(this);
+		fr_thread.start();
 	}
 	/**
 	 * @param args

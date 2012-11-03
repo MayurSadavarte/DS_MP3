@@ -108,7 +108,8 @@ public class ContactAddRemove implements Runnable {
 							
 							String prevprevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
 							m.sendMsg(m.membership_sock, prevprevIP, recvMsg, Machine.MEMBERSHIP_PORT);
-							//need to review - need to add the code for updating map here
+							//TODO - need to review - need to add the code for updating map here
+							
 							try {
 								WriteLog.printList2Log(m.myIP, memberList);
 								WriteLog.writelog(m.myIP, "send to "+prevIP+" msg is " + recvMsg);
@@ -119,16 +120,30 @@ public class ContactAddRemove implements Runnable {
 						}
 						//memberList.remove(recvMsg.trim());
 						WriteLog.printList2Log("Contact", memberList);
+						
+						if (m.master)
+						{
+							
+							if(m.node_file_map.containsKey(ip))
+								m.node_file_map.remove(ip);
+							for (String tkey : m.file_node_map.keySet())
+							{
+								Vector<String> tvalue = m.file_node_map.get(tkey);
+								if (tvalue.contains(ip))
+								{
+									// TODO - can it work?? will this affect file_node_map?
+									tvalue.remove(ip);
+									// TODO - trigger file balancing thread here
+								}
+							}
+						}
 					}
 					else if (recvMsg.charAt(0) == 'A')
 					{
 						// received an incoming socket, append ip address to memberlist
 						//String incomingIP = new String(incoming.getData());
 						String ip = (recvMsg.substring(1)).trim();
-						
-						
-						
-									
+														
 						System.out.println(ip);
 						
 						WriteLog.writelog("Contact" ,"received incoming socket, append " + ip);
@@ -145,9 +160,7 @@ public class ContactAddRemove implements Runnable {
 								e1.printStackTrace();
 							}
 							memberList.add(ip);
-							int c = m.map.containsKey(ip)? m.map.get(ip) : 0;
-							m.map.put(ip,c+1);   //need to review
-							
+								
 							int index = m.memberList.indexOf(m.myIP);
 							String nextIP = m.memberList.get((index + 1) % memberList.size());
 							m.sendMsg(m.membership_sock, nextIP, recvMsg, Machine.MEMBERSHIP_PORT);
@@ -175,19 +188,29 @@ public class ContactAddRemove implements Runnable {
 						//}
 						
 					}
-					else if (recvMsg.charAt(0) == 'J')
+					else if (m.master)
 					{
-						String ip = (recvMsg.substring(1)).trim();
-						WriteLog.writelog("Contact" ,"received incoming socket, remove " + ip );
+						if (recvMsg.charAt(0) == 'J')
+						{
+							String ip = (recvMsg.substring(1)).trim();
+							WriteLog.writelog("Contact" ,"received incoming socket, remove " + ip );
 						
-						if (!memberList.contains(ip)) {
-							//TODO
-							//need to review..some more code needs to be added here
-							sendMemberListToIncoming(m.membership_sock, ip);
-						} else {
-							//TODO
-							//need to review..some map related processing will be different in these scenarios
+							if (!memberList.contains(ip)) {
+								//TODO
+								//need to review..some more code needs to be added here
+								sendMemberListToIncoming(m.membership_sock, ip);
+							} else {
+								//TODO
+								//need to review..some map related processing will be different in these scenarios
 							
+							}
+					
+							if(!m.node_file_map.containsKey(ip))
+								m.node_file_map.put(ip, null);
+							//TODO - need to run balancing algorithm here
+							// get the id's of the files written to this node and then update the file_node_map accordingly
+					
+							//TODO - need to send out the ADD message
 						}
 					}
 				} catch (IOException e) {
