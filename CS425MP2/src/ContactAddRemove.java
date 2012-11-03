@@ -1,5 +1,6 @@
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
@@ -7,7 +8,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.Vector;
 
 import failureDetection_Membership.WriteLog;
@@ -23,10 +23,19 @@ public class ContactAddRemove implements Runnable {
 
 	
 	public void sendMemberListToIncoming(DatagramSocket s, String ip_addr) {
-		String mList;
-		//TODO
-		mList = m.memberList.toString();
-		mList = "I"+mList;
+		String mList = null;
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	    try {
+	    	ObjectOutputStream oos = new ObjectOutputStream(baos);
+	    	oos.writeObject(m.memberList);
+	    	oos.flush();
+	    	//TODO - need to decide whether we need to send length also in first packet and then actual packet
+	    	// get the byte array of the object
+	    	//byte[] Buf= baos.toByteArray();
+	    	mList = baos.toString();
+	    } catch(IOException e) {
+	    	e.printStackTrace();
+	    }
 		m.sendMsg(s, ip_addr, mList, Machine.MEMBERSHIP_PORT);
 	}
 	

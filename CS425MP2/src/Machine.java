@@ -3,6 +3,7 @@ import java.io.*;
 import java.net.*;
 import java.util.HashMap;
 import java.util.Vector;
+import java.io.ByteArrayInputStream;
 
 
 import querier.Server;
@@ -59,19 +60,26 @@ public class Machine {
 		joinMsg = 'J'+myIP;
 		sendMsg(membership_sock, ip, joinMsg, Machine.MEMBERSHIP_PORT);
 		
+		try {
 		recvPacket = new DatagramPacket(recvData,recvData.length);
+		membership_sock.receive(recvPacket);
+		//TODO - need to decide whether we need to define this length or not!!
+		ByteArrayInputStream baos = new ByteArrayInputStream(recvData);
+		
+			ObjectInputStream oos = new ObjectInputStream(baos);
+			memberList = (Vector<String>)oos.readObject();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();			
+		}
+	    
 		try {
 			contactIP = ip;
 			
 			WriteLog.writelog(myIP, "received ML");
 			WriteLog.printList2Log(myIP, memberList);
 			
-			membership_sock.receive(recvPacket);
-			
-			//need to extract membership list from recvPacket
-			
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
