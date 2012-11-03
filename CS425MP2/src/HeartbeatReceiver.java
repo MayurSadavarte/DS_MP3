@@ -33,7 +33,7 @@ public class HeartbeatReceiver implements Runnable {
 				m.heartbeat_sock.setSoTimeout(3000);
 				m.heartbeat_sock.receive(recvPacket);
 				recvMsg = new String(recvPacket.getData());
-				//verify whether it is the correct heartbeat from the correct node!!
+				//TODO - verify whether it is the correct heartbeat from the correct node!!
 				
 				//System.out.println("HB from "+recvMsg);
 			} catch (SocketTimeoutException e) {

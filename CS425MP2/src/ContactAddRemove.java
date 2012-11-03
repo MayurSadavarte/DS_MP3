@@ -1,5 +1,3 @@
-
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -10,7 +8,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.Vector;
 
-import failureDetection_Membership.WriteLog;
 
 
 public class ContactAddRemove implements Runnable {

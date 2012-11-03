@@ -10,38 +10,53 @@ import querier.Server;
 
 public class Machine {
 
-	private boolean flag;
-	public HashMap<String, Integer> map;
+	public HashMap<String, Vector<String>> file_node_map;
+	public HashMap<String, Vector<String>> node_file_map;
 	public static final int MEMBERSHIP_PORT = 8889;
 	public static final int FILE_OPERATIONS_PORT = 8891;
+	public static final int FILE_TRANSFER_PORT = 8892;
 	//public static final int DEFAULT_CONTACT_PORT = 8888;
 	public static final int HEARTBEAT_PORT = 8890;
 	public static final int QUERY_PORT = 10000;
 	
 	public DatagramSocket membership_sock;
 	public DatagramSocket heartbeat_sock;
+	public DatagramSocket filerep_sock;
 	public DatagramSocket outgoing;
 	public Vector<String> memberList;
 	private String contactIP;
 	public static String myIP;
+	public boolean master = false;
 	
-	
+	public Machine(boolean mflag) {
+		master = mflag;
+		membership_sock = null;
+		outgoing = null;
+		memberList = null;
+		if (master)
+			file_node_map = new HashMap<String, Vector<String>>();
+		node_file_map = new HashMap<String, Vector<String>>();
+		try {
+			myIP = InetAddress.getLocalHost().getHostAddress();
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
+	}
 	public Machine() {
 		membership_sock = null;
 		outgoing = null;
 		memberList = null;
-		map = new HashMap<String, Integer>();
-		flag = true;
+		if (master)
+			file_node_map = new HashMap<String, Vector<String>>();
+		node_file_map = new HashMap<String, Vector<String>>();
 		
 		try {
 			myIP = InetAddress.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
-		
-
 	}
-
+	
 	/**
 	 * get memberlist from the connecting contact
 	 * 
@@ -123,14 +138,35 @@ public class Machine {
 	}
 	
 
+	public void startFileReplication() {
+		Runnable runnable = new FileReplication(this);
+		Thread thread = new Thread(runnable);
+		thread.start();
+	}
+	
 	public static void main(String[] args) {
-		Machine m = new Machine();
+		boolean mflag = false;
+		Machine m;
+		if (args.length == 2) {
+			mflag = args[1].equals("mastermode");
+			m = new Machine(mflag);
+		} else {
+			m = new Machine();
+		}
+		
 		m.startAddRem();
 		//join
-		m.getMemberlistFromIP(args[0]);
-		
+		if (m.master)
+		{
+		//TODO	
+		}
+		else
+		{
+			m.getMemberlistFromIP(args[0]);
+		}
 		// r (String s : m.getMemberList())
 		// System.out.println(s);
+		m.startFileReplication();
 		
 		try {
 			WriteLog.printList2Log(myIP, m.memberList);
