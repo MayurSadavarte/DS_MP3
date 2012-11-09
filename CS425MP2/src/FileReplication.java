@@ -9,7 +9,9 @@ import java.util.Vector;
 
 public class FileReplication implements Runnable {
 	private Machine m;
-	public FileTransfer FileWorker;
+	public FileTransferClient FileClient;
+	public FileTransferServer FileServer;
+	
 	
 	public FileReplication(Machine machine)
 	{
@@ -22,11 +24,22 @@ public class FileReplication implements Runnable {
 		
 	}
 	
+	public void reformFileInfo()
+	{
+		// TODO - called when a node recieves R message and now i am the new master
+		// hence i need to reform the file replication info in the maps
+		
+	}
+	
 	public void start()
 	{
+		FileServer.start();
+		//FileClient.start(); //need not start client here..will be started whenever required
 		Thread fr_thread = new Thread(this);
 		fr_thread.start();
 	}
+	
+	
 	/**
 	 * @param args
 	 */

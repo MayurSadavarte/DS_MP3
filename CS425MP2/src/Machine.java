@@ -20,19 +20,20 @@ public class Machine {
 	public static final int QUERY_PORT = 10000;
 	
 	public DatagramSocket membership_sock;
-	public DatagramSocket heartbeat_sock;
+	public DatagramSocket heartbeat_sock=null;
 	public DatagramSocket filerep_sock;
-	public DatagramSocket outgoing;
+	//public DatagramSocket outgoing;
 	public Vector<String> memberList;
-	private String contactIP;
-	public static String myIP;
+	//private String contactIP;
+	public String myIP;
+	public String masterIP;
 	public boolean master = false;
 	public FileReplication FileReplicator;
 	
 	public Machine(boolean mflag) {
 		master = mflag;
 		membership_sock = null;
-		outgoing = null;
+		//outgoing = null;
 		memberList = null;
 		if (master)
 			file_node_map = new HashMap<String, Vector<String>>();
@@ -45,7 +46,7 @@ public class Machine {
 	}
 	public Machine() {
 		membership_sock = null;
-		outgoing = null;
+		//outgoing = null;
 		memberList = null;
 		if (master)
 			file_node_map = new HashMap<String, Vector<String>>();
@@ -77,10 +78,10 @@ public class Machine {
 		sendMsg(membership_sock, ip, joinMsg, Machine.MEMBERSHIP_PORT);
 		
 		try {
-		recvPacket = new DatagramPacket(recvData,recvData.length);
-		membership_sock.receive(recvPacket);
-		//TODO - need to decide whether we need to define this length or not!!
-		ByteArrayInputStream baos = new ByteArrayInputStream(recvData);
+			recvPacket = new DatagramPacket(recvData,recvData.length);
+			membership_sock.receive(recvPacket);
+			//TODO - need to decide whether we need to define this length or not!!
+			ByteArrayInputStream baos = new ByteArrayInputStream(recvData);
 		
 			ObjectInputStream oos = new ObjectInputStream(baos);
 			memberList = (Vector<String>)oos.readObject();
@@ -91,7 +92,6 @@ public class Machine {
 		}
 	    
 		try {
-			contactIP = ip;
 			
 			WriteLog.writelog(myIP, "received ML");
 			WriteLog.printList2Log(myIP, memberList);
@@ -140,6 +140,7 @@ public class Machine {
 	
 
 	public void startFileReplication() {
+		
 		FileReplicator = new FileReplication(this);
 		FileReplicator.start();
 	}
@@ -159,21 +160,23 @@ public class Machine {
 		if (m.master)
 		{
 		//TODO - need to review the file_node_map.put call
-			m.memberList.add(myIP);
+			m.masterIP = m.myIP;
+			m.memberList.add(m.myIP);
 			//m.file_node_map.put(null, m.memberList);
-			m.node_file_map.put(myIP, null);
+			m.node_file_map.put(m.myIP, null);
 		}
 		else
 		{
+			m.masterIP = args[0];
 			m.getMemberlistFromIP(args[0]);
-			m.node_file_map.put(myIP, null);
+			m.node_file_map.put(m.myIP, null);
 		}
 		// r (String s : m.getMemberList())
 		// System.out.println(s);
 		m.startFileReplication();
 		
 		try {
-			WriteLog.printList2Log(myIP, m.memberList);
+			WriteLog.printList2Log(m.myIP, m.memberList);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -199,13 +202,13 @@ public class Machine {
 		this.membership_sock = membership_sock;
 	}
 
-	public DatagramSocket getOutgoing() {
-		return outgoing;
-	}
+	//public DatagramSocket getOutgoing() {
+	//	return outgoing;
+	//}
 
-	public void setOutgoing(DatagramSocket outgoing) {
-		this.outgoing = outgoing;
-	}
+	//public void setOutgoing(DatagramSocket outgoing) {
+	//	this.outgoing = outgoing;
+	//}
 
 	public Vector<String> getMemberList() {
 		return memberList;
@@ -216,11 +219,11 @@ public class Machine {
 	}
 
 	public String getContactIP() {
-		return contactIP;
+		return masterIP;
 	}
 
 	public void setContactIP(String contactIP) {
-		this.contactIP = contactIP;
+		this.masterIP = contactIP;
 	}
 
 	public String getMyIP() {

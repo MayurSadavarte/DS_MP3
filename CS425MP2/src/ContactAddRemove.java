@@ -65,7 +65,15 @@ public class ContactAddRemove implements Runnable {
 	}
 
 	
-	
+	private void sendAddToAllNodes(String nodeIP)
+	{
+		String addMsg = 'A'+nodeIP;
+		for (String tempIP : m.memberList)
+		{
+			m.sendMsg(m.membership_sock, tempIP, addMsg, Machine.MEMBERSHIP_PORT);
+		}
+		
+	}
 	
 	
 	
@@ -102,20 +110,30 @@ public class ContactAddRemove implements Runnable {
 						
 						if (memberList.contains(ip)) {
 							memberList.remove(ip);
+							
+							//String prevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
+							//m.sendMsg(m.membership_sock, prevIP, recvMsg, Machine.MEMBERSHIP_PORT);
+							
+							//String prevprevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
+							//m.sendMsg(m.membership_sock, prevprevIP, recvMsg, Machine.MEMBERSHIP_PORT);
+							//TODO - need to review - need to add the code for updating map here
 							int index = memberList.indexOf(m.myIP);
 							String prevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
-							m.sendMsg(m.membership_sock, prevIP, recvMsg, Machine.MEMBERSHIP_PORT);
-							
-							String prevprevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
-							m.sendMsg(m.membership_sock, prevprevIP, recvMsg, Machine.MEMBERSHIP_PORT);
-							//TODO - need to review - need to add the code for updating map here
-							
 							try {
 								WriteLog.printList2Log(m.myIP, memberList);
 								WriteLog.writelog(m.myIP, "send to "+prevIP+" msg is " + recvMsg);
 							} catch (IOException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
+							}
+							//code for checking if now I am a new master, if yes, i need to run some code
+							//change the mode
+							//contact all the nodes in the memberlist for file replication info
+							
+							if(prevIP == m.masterIP)
+							{
+								m.master = true;
+								m.FileReplicator.reformFileInfo();
 							}
 						}
 						//memberList.remove(recvMsg.trim());
@@ -136,6 +154,8 @@ public class ContactAddRemove implements Runnable {
 									// TODO - trigger file balancing thread here
 								}
 							}
+							//call to filereplicator for balancing maps
+							m.FileReplicator.balanceFiles();
 						}
 					}
 					else if (recvMsg.charAt(0) == 'A')
@@ -161,17 +181,17 @@ public class ContactAddRemove implements Runnable {
 							}
 							memberList.add(ip);
 								
-							int index = m.memberList.indexOf(m.myIP);
-							String nextIP = m.memberList.get((index + 1) % memberList.size());
-							m.sendMsg(m.membership_sock, nextIP, recvMsg, Machine.MEMBERSHIP_PORT);
+							//int index = m.memberList.indexOf(m.myIP);
+							//String nextIP = m.memberList.get((index + 1) % memberList.size());
+							//m.sendMsg(m.membership_sock, nextIP, recvMsg, Machine.MEMBERSHIP_PORT);
 							
 							//need to review
-							String nextnextIP = memberList.get((index + 2) % memberList.size());
-							m.sendMsg(m.membership_sock, nextnextIP, recvMsg, Machine.MEMBERSHIP_PORT);				
+							//String nextnextIP = memberList.get((index + 2) % memberList.size());
+							//m.sendMsg(m.membership_sock, nextnextIP, recvMsg, Machine.MEMBERSHIP_PORT);				
 							
 							try {
 								WriteLog.printList2Log(m.myIP, memberList);
-								WriteLog.writelog(m.myIP, "send to "+nextIP+" msg is " + recvMsg);
+								//WriteLog.writelog(m.myIP, "send to "+nextIP+" msg is " + recvMsg);
 							} catch (IOException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
@@ -193,24 +213,31 @@ public class ContactAddRemove implements Runnable {
 						if (recvMsg.charAt(0) == 'J')
 						{
 							String ip = (recvMsg.substring(1)).trim();
-							WriteLog.writelog("Contact" ,"received incoming socket, remove " + ip );
+							WriteLog.writelog("Contact" ,"received incoming socket, join " + ip );
 						
 							if (!memberList.contains(ip)) {
 								//TODO
 								//need to review..some more code needs to be added here
+								memberList.add(ip);
 								sendMemberListToIncoming(m.membership_sock, ip);
+								sendAddToAllNodes(ip);
 							} else {
 								//TODO
 								//need to review..some map related processing will be different in these scenarios
-							
+								sendMemberListToIncoming(m.membership_sock, ip);
 							}
 					
 							if(!m.node_file_map.containsKey(ip))
+								//TODO - need to decide whether we are going to save the replicated file info while dying 
+								// and then sending it in J message to the master
 								m.node_file_map.put(ip, null);
 							//TODO - need to run balancing algorithm here
+								m.FileReplicator.balanceFiles();
 							// get the id's of the files written to this node and then update the file_node_map accordingly
-					
-							//TODO - need to send out the ADD message
+							// or we could update it inside balanceFiles itself
+							//TODO - need to send out the ADD message to all the nodes
+								sendAddToAllNodes(ip);
+
 						}
 					}
 				} catch (IOException e) {

@@ -25,7 +25,8 @@ public class HeartbeatSender implements Runnable{
 		//	Random g = new Random(4545556);
 		//	double r = g.nextDouble(); 
 		//	if(r>0.15){
-				m.sendMsg(m.membership_sock, nextIP, myIP, Machine.HEARTBEAT_PORT);
+			if(m.heartbeat_sock != null)
+				m.sendMsg(m.heartbeat_sock, nextIP, myIP, Machine.HEARTBEAT_PORT);
 		//	}
 			
 			//System.out.println("send HB to "+ nextIP);

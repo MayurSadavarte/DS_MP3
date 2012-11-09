@@ -54,28 +54,29 @@ public class HeartbeatReceiver implements Runnable {
 				
 				if(memberList.size()>1){
 				
-				int index = memberList.indexOf(myIP);
+					int index = memberList.indexOf(myIP);
 				
-				String rmvIP = memberList.remove((index - 1 + memberList.size()) % memberList.size());
-				index = memberList.indexOf(myIP);
-				String cIP = m.getContactIP();
-				m.sendMsg(m.membership_sock, cIP, rmvIP, Machine.MEMBERSHIP_PORT);
+					String rmvIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
+					//index = memberList.indexOf(myIP);
+								
 				
-				try {
-					WriteLog.writelog(m.getMyIP(), "send to "+ cIP+ " rmvIP: "+ rmvIP);
-					WriteLog.printList2Log(m.getMyIP(), memberList);
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+					try {
+						WriteLog.printList2Log(m.getMyIP(), memberList);
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 				
-				//if(memberList.size()>1){
-					String prevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
-					String msg = "R" + rmvIP;
-					m.sendMsg(m.membership_sock, prevIP, msg, Machine.MEMBERSHIP_PORT);
+					//if(memberList.size()>1){
+					
+					String remMsg = "R" + rmvIP;
+					for (String tempIP : m.memberList)
+					{
+						m.sendMsg(m.membership_sock, tempIP, remMsg, Machine.MEMBERSHIP_PORT);
+					}
 					
 					try {
-						WriteLog.writelog(m.getMyIP(), "RMV send to "+ prevIP+ "msg: "+ msg);
+						WriteLog.writelog(m.getMyIP(), "RMV send to "+ "all nodes" + "msg: "+ remMsg);
 					} catch (IOException e1) {
 						// TODO Auto-generated catch block
 						e1.printStackTrace();
