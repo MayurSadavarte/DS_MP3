@@ -82,12 +82,11 @@ public class Machine {
 		} catch(IOException e) {
 	    	e.printStackTrace();
 	    }
-		DatagramPacket recvPacket;
-		byte[] recvData = new byte[1024];
-		
 		
 		sendMsg(membership_sock, ip, joinbaos, Machine.MEMBERSHIP_PORT);
 		
+		DatagramPacket recvPacket;
+		byte[] recvData = new byte[1024];
 		try {
 			recvPacket = new DatagramPacket(recvData,recvData.length);
 			membership_sock.receive(recvPacket);

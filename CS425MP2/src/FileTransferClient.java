@@ -5,12 +5,12 @@ public class FileTransferClient implements Runnable {
 	Socket fclientSock = null;  
     DataOutputStream os = null;
     DataInputStream is = null;
-	String ftransferServer = null;
+	InetAddress ftransferServer = null;
     
 	public void start(String fserver)
 	{
 		try {
-			ftransferServer = fserver;
+			InetAddress ftransferServer = InetAddress.getByName(fserver);
 			fclientSock = new Socket(ftransferServer, Machine.FILE_TRANSFER_PORT);
 			os = new DataOutputStream(fclientSock.getOutputStream());
             is = new DataInputStream(fclientSock.getInputStream());
