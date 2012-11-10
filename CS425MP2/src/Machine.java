@@ -12,6 +12,7 @@ public class Machine {
 
 	public HashMap<String, Vector<String>> file_node_map;
 	public HashMap<String, Vector<String>> node_file_map;
+	public Vector<String> myFileList;
 	public static final int MEMBERSHIP_PORT = 8889;
 	public static final int FILE_OPERATIONS_PORT = 8891;
 	public static final int FILE_TRANSFER_PORT = 8892;
@@ -35,9 +36,10 @@ public class Machine {
 		membership_sock = null;
 		//outgoing = null;
 		memberList = null;
+		myFileList = null;
 		if (master)
 			file_node_map = new HashMap<String, Vector<String>>();
-		node_file_map = new HashMap<String, Vector<String>>();
+			node_file_map = new HashMap<String, Vector<String>>();
 		try {
 			//myIP = InetAddress.getLocalHost().getHostAddress();
 			myName = InetAddress.getLocalHost().getHostName();
@@ -49,10 +51,10 @@ public class Machine {
 		membership_sock = null;
 		//outgoing = null;
 		memberList = null;
+		myFileList = null;
 		if (master)
 			file_node_map = new HashMap<String, Vector<String>>();
-		node_file_map = new HashMap<String, Vector<String>>();
-		
+			node_file_map = new HashMap<String, Vector<String>>();
 		try {
 			//myIP = InetAddress.getLocalHost().getHostAddress();
 			myName = InetAddress.getLocalHost().getHostName();
@@ -224,7 +226,15 @@ public class Machine {
 			m = new Machine();
 		}
 		m.memberList = new Vector<String>();
-		m.startAddRem();
+		m.myFileList = new Vector<String>();
+		
+		try {
+			m.membership_sock = new DatagramSocket(Machine.MEMBERSHIP_PORT);
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		//join
 		if (m.master)
 		{
@@ -233,12 +243,13 @@ public class Machine {
 			m.memberList.add(m.myName);
 			//m.file_node_map.put(null, m.memberList);
 			m.node_file_map.put(m.myName, null);
+			m.startAddRem();
 		}
 		else
 		{
 			m.masterName = args[0];
 			m.getMemberlistFromIP(args[0]);
-			m.node_file_map.put(m.myName, null);
+			m.startAddRem();
 		}
 		// r (String s : m.getMemberList())
 		// System.out.println(s);

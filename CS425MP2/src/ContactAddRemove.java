@@ -8,6 +8,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.HashMap;
 import java.util.Vector;
 
 
@@ -41,12 +42,7 @@ public class ContactAddRemove implements Runnable {
 	
 	
 	public void run(){
-		try {
-			m.membership_sock = new DatagramSocket(Machine.MEMBERSHIP_PORT);
-		} catch (SocketException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+	
 		while(true){
 			String recvMsg;
 			
@@ -98,6 +94,8 @@ public class ContactAddRemove implements Runnable {
 							if(m.myName == newMaster)
 							{
 								m.master = true;
+								m.file_node_map = new HashMap<String, Vector<String>>();
+								m.node_file_map = new HashMap<String, Vector<String>>();
 								m.FileReplicator.reformFileInfo();
 							}
 						}

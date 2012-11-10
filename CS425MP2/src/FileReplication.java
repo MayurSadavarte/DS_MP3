@@ -20,7 +20,8 @@ public class FileReplication implements Runnable {
 	
 	public FileReplication(Machine machine)
 	{
-		m=machine;		
+		m=machine;
+		FileServer = new FileTransferServer();
 	}
 	
 	private void sendListMsg(Vector<String> msgList, String nodeName)
