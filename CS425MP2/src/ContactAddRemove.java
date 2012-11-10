@@ -66,19 +66,27 @@ public class ContactAddRemove implements Runnable {
 						WriteLog.writelog("Contact" ,"received incoming socket, remove " + ip );
 						
 						if (memberList.contains(ip)) {
-							memberList.remove(ip);
+							
 							
 							//String prevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
 							//m.sendMsg(m.membership_sock, prevIP, recvMsg, Machine.MEMBERSHIP_PORT);
 							
 							//String prevprevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
 							//m.sendMsg(m.membership_sock, prevprevIP, recvMsg, Machine.MEMBERSHIP_PORT);
-							//TODO - need to review - need to add the code for updating map here
-							int index = memberList.indexOf(m.myName);
-							String prevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
+							String newMaster = null;
+							if (ip == m.masterName)
+							{
+								int mindex = memberList.indexOf(m.masterName);
+								newMaster = memberList.get((mindex + 1) % memberList.size());
+								m.masterName = newMaster;
+							}
+							
+							memberList.remove(ip);
+							//int index = memberList.indexOf(m.myName);
+							//String prevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
 							try {
 								WriteLog.printList2Log(m.myName, memberList);
-								WriteLog.writelog(m.myName, "send to "+prevIP+" msg is " + recvMsg);
+								
 							} catch (IOException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
@@ -87,7 +95,7 @@ public class ContactAddRemove implements Runnable {
 							//change the mode
 							//contact all the nodes in the memberlist for file replication info
 							
-							if(prevIP == m.masterName)
+							if(m.myName == newMaster)
 							{
 								m.master = true;
 								m.FileReplicator.reformFileInfo();
