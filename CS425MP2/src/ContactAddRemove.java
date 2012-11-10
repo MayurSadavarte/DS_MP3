@@ -1,5 +1,7 @@
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -36,51 +38,9 @@ public class ContactAddRemove implements Runnable {
 		m.sendMsg(s, ip_addr, mList, Machine.MEMBERSHIP_PORT);
 	}
 	
-	/**
-	 * get msg string from UDP
-	 * 
-	 * @return
-	 */
-	public String recvMsg() {
-		DatagramPacket recvPacket;
-		String recvMsg = null;
-		byte[] recvData = new byte[1024];
-		recvPacket = new DatagramPacket(recvData,recvData.length);
-		
-		try {
-			
-			m.membership_sock.receive(recvPacket);
-			recvMsg = new String(recvPacket.getData());
-			
-			WriteLog.writelog(m.myIP, "received from UDP "+recvMsg);
-			
-			//System.out.println(recvMsg);
-		} catch (SocketException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		return recvMsg;
-	}
-
-	
-	private void sendAddToAllNodes(String nodeIP)
-	{
-		String addMsg = 'A'+nodeIP;
-		for (String tempIP : m.memberList)
-		{
-			m.sendMsg(m.membership_sock, tempIP, addMsg, Machine.MEMBERSHIP_PORT);
-		}
-		
-	}
-	
 	
 	
 	public void run(){
-		byte[] recvData = new byte[1024];
-		DatagramPacket recvPacket = new DatagramPacket(recvData,recvData.length);
-
 		try {
 			m.membership_sock = new DatagramSocket(Machine.MEMBERSHIP_PORT);
 		} catch (SocketException e) {
@@ -88,14 +48,11 @@ public class ContactAddRemove implements Runnable {
 			e.printStackTrace();
 		}
 		while(true){
-			String recvMsg = null;
+			String recvMsg;
 			
 				try {
-					m.membership_sock.receive(recvPacket);
-					recvMsg = new String(recvPacket.getData());
-					//System.out.println(recvMsg);
+					recvMsg = m.recvStrMsg();
 					
-					//need to review - instead of using local memberlist we can think of using central memberlist and using locks to synchronize
 					Vector<String> memberList = m.getMemberList();
 					WriteLog.printList2Log("Contact", memberList);
 					
@@ -117,11 +74,11 @@ public class ContactAddRemove implements Runnable {
 							//String prevprevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
 							//m.sendMsg(m.membership_sock, prevprevIP, recvMsg, Machine.MEMBERSHIP_PORT);
 							//TODO - need to review - need to add the code for updating map here
-							int index = memberList.indexOf(m.myIP);
+							int index = memberList.indexOf(m.myName);
 							String prevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
 							try {
-								WriteLog.printList2Log(m.myIP, memberList);
-								WriteLog.writelog(m.myIP, "send to "+prevIP+" msg is " + recvMsg);
+								WriteLog.printList2Log(m.myName, memberList);
+								WriteLog.writelog(m.myName, "send to "+prevIP+" msg is " + recvMsg);
 							} catch (IOException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
@@ -130,7 +87,7 @@ public class ContactAddRemove implements Runnable {
 							//change the mode
 							//contact all the nodes in the memberlist for file replication info
 							
-							if(prevIP == m.masterIP)
+							if(prevIP == m.masterName)
 							{
 								m.master = true;
 								m.FileReplicator.reformFileInfo();
@@ -174,7 +131,7 @@ public class ContactAddRemove implements Runnable {
 						if (!memberList.contains(ip)) {
 							//System.out.println("999999999999!!!!!!!");
 							try {
-								WriteLog.writelog(m.myIP, "adddddddddddddd " + ip);
+								WriteLog.writelog(m.myName, "adddddddddddddd " + ip);
 							} catch (IOException e1) {
 								// TODO Auto-generated catch block
 								e1.printStackTrace();
@@ -190,7 +147,7 @@ public class ContactAddRemove implements Runnable {
 							//m.sendMsg(m.membership_sock, nextnextIP, recvMsg, Machine.MEMBERSHIP_PORT);				
 							
 							try {
-								WriteLog.printList2Log(m.myIP, memberList);
+								WriteLog.printList2Log(m.myName, memberList);
 								//WriteLog.writelog(m.myIP, "send to "+nextIP+" msg is " + recvMsg);
 							} catch (IOException e) {
 								// TODO Auto-generated catch block
@@ -220,7 +177,7 @@ public class ContactAddRemove implements Runnable {
 								//need to review..some more code needs to be added here
 								memberList.add(ip);
 								sendMemberListToIncoming(m.membership_sock, ip);
-								sendAddToAllNodes(ip);
+								m.sendMsgToAllNodes(ip, "ADD");
 							} else {
 								//TODO
 								//need to review..some map related processing will be different in these scenarios
@@ -236,7 +193,7 @@ public class ContactAddRemove implements Runnable {
 							// get the id's of the files written to this node and then update the file_node_map accordingly
 							// or we could update it inside balanceFiles itself
 							//TODO - need to send out the ADD message to all the nodes
-								sendAddToAllNodes(ip);
+								m.sendMsgToAllNodes(ip, "ADD");
 
 						}
 					}

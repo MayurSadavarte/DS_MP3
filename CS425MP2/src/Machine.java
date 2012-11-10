@@ -25,8 +25,8 @@ public class Machine {
 	//public DatagramSocket outgoing;
 	public Vector<String> memberList;
 	//private String contactIP;
-	public String myIP;
-	public String masterIP;
+	public String myName;
+	public String masterName;
 	public boolean master = false;
 	public FileReplication FileReplicator;
 	
@@ -39,7 +39,8 @@ public class Machine {
 			file_node_map = new HashMap<String, Vector<String>>();
 		node_file_map = new HashMap<String, Vector<String>>();
 		try {
-			myIP = InetAddress.getLocalHost().getHostAddress();
+			//myIP = InetAddress.getLocalHost().getHostAddress();
+			myName = InetAddress.getLocalHost().getHostName();
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
@@ -53,7 +54,8 @@ public class Machine {
 		node_file_map = new HashMap<String, Vector<String>>();
 		
 		try {
-			myIP = InetAddress.getLocalHost().getHostAddress();
+			//myIP = InetAddress.getLocalHost().getHostAddress();
+			myName = InetAddress.getLocalHost().getHostName();
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
@@ -69,22 +71,31 @@ public class Machine {
 	 */
 	@SuppressWarnings("unchecked")
 	public void getMemberlistFromIP(String ip) {
-		String joinMsg;
-		String recvMsg = null;
+		String joinMsg, joinbaos=null;
+		joinMsg = 'J'+myName;
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try {
+			ObjectOutputStream oos = new ObjectOutputStream(baos);
+			oos.writeObject(joinMsg);
+	    	oos.flush();
+	    	joinbaos = baos.toString();
+		} catch(IOException e) {
+	    	e.printStackTrace();
+	    }
 		DatagramPacket recvPacket;
 		byte[] recvData = new byte[1024];
 		
-		joinMsg = 'J'+myIP;
-		sendMsg(membership_sock, ip, joinMsg, Machine.MEMBERSHIP_PORT);
+		
+		sendMsg(membership_sock, ip, joinbaos, Machine.MEMBERSHIP_PORT);
 		
 		try {
 			recvPacket = new DatagramPacket(recvData,recvData.length);
 			membership_sock.receive(recvPacket);
 			//TODO - need to decide whether we need to define this length or not!!
-			ByteArrayInputStream baos = new ByteArrayInputStream(recvData);
+			ByteArrayInputStream bais = new ByteArrayInputStream(recvData);
 		
-			ObjectInputStream oos = new ObjectInputStream(baos);
-			memberList = (Vector<String>)oos.readObject();
+			ObjectInputStream ois = new ObjectInputStream(bais);
+			memberList = (Vector<String>)ois.readObject();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
@@ -93,8 +104,8 @@ public class Machine {
 	    
 		try {
 			
-			WriteLog.writelog(myIP, "received ML");
-			WriteLog.printList2Log(myIP, memberList);
+			WriteLog.writelog(myName, "received ML");
+			WriteLog.printList2Log(myName, memberList);
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -129,6 +140,65 @@ public class Machine {
 	
 	
 	/**
+	 * get msg string from UDP
+	 * 
+	 * @return
+	 */
+	public String recvStrMsg() {
+		DatagramPacket recvPacket;
+		String recvMsg = null;
+		byte[] recvData = new byte[1024];
+		//recvPacket = new DatagramPacket(recvData,recvData.length);
+		
+		try {
+			recvPacket = new DatagramPacket(recvData,recvData.length);
+			
+			membership_sock.receive(recvPacket);
+			//TODO - need to decide whether we need to define this length or not!!
+			ByteArrayInputStream bais = new ByteArrayInputStream(recvData);
+		
+			ObjectInputStream ois = new ObjectInputStream(bais);
+			recvMsg = (String)ois.readObject();
+			WriteLog.writelog(myName, "received from UDP "+recvMsg);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();			
+		}
+		
+		return recvMsg;
+	}
+
+
+	
+	public void sendMsgToAllNodes(String nodeIP, String cmd)
+	{
+		String addOrRemMsg = null;
+		String fmsg = null;
+		if (cmd == "ADD")
+			addOrRemMsg = 'A'+nodeIP;
+		else if (cmd == "REM")
+			addOrRemMsg = 'R'+nodeIP;
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	    try {
+	    	ObjectOutputStream oos = new ObjectOutputStream(baos);
+	    	oos.writeObject(addOrRemMsg);
+	    	oos.flush();
+	    	//byte[] Buf= baos.toByteArray();
+	    	fmsg = baos.toString();
+	    } catch(IOException e) {
+	    	e.printStackTrace();
+	    }
+		
+		for (String tempIP : memberList)
+		{
+			sendMsg(membership_sock, tempIP, fmsg, Machine.MEMBERSHIP_PORT);
+		}
+		
+	}
+	
+	
+	/**
 	 * start the server socket and listen to membership_sock connection request
 	 */
 	public void startAddRem() {
@@ -154,29 +224,29 @@ public class Machine {
 		} else {
 			m = new Machine();
 		}
-		
+		m.memberList = new Vector<String>();
 		m.startAddRem();
 		//join
 		if (m.master)
 		{
 		//TODO - need to review the file_node_map.put call
-			m.masterIP = m.myIP;
-			m.memberList.add(m.myIP);
+			m.masterName = m.myName;
+			m.memberList.add(m.myName);
 			//m.file_node_map.put(null, m.memberList);
-			m.node_file_map.put(m.myIP, null);
+			m.node_file_map.put(m.myName, null);
 		}
 		else
 		{
-			m.masterIP = args[0];
+			m.masterName = args[0];
 			m.getMemberlistFromIP(args[0]);
-			m.node_file_map.put(m.myIP, null);
+			m.node_file_map.put(m.myName, null);
 		}
 		// r (String s : m.getMemberList())
 		// System.out.println(s);
 		m.startFileReplication();
 		
 		try {
-			WriteLog.printList2Log(m.myIP, m.memberList);
+			WriteLog.printList2Log(m.myName, m.memberList);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -218,19 +288,19 @@ public class Machine {
 		this.memberList = memberList;
 	}
 
-	public String getContactIP() {
-		return masterIP;
+	public String getContactName() {
+		return masterName;
 	}
 
-	public void setContactIP(String contactIP) {
-		this.masterIP = contactIP;
+	public void setContactName(String contactIP) {
+		this.masterName = contactIP;
 	}
 
-	public String getMyIP() {
-		return myIP;
+	public String getMyName() {
+		return myName;
 	}
 
-	public void setMyIP(String myIP) {
-		this.myIP = myIP;
+	public void setMyName(String myIP) {
+		this.myName = myIP;
 	}
 }

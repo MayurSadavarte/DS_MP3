@@ -17,7 +17,7 @@ public class HeartbeatSender implements Runnable{
 		while(true){
 			
 			Vector<String> memberList = m.getMemberList();
-			String myIP = m.getMyIP();
+			String myIP = m.getMyName();
 			int index = memberList.indexOf(myIP);
 			
 			String nextIP = memberList.get((index + 1) % memberList.size());

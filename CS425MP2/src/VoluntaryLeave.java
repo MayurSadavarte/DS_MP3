@@ -17,8 +17,8 @@ public class VoluntaryLeave implements Runnable {
 		while ((cmd = s.nextLine()) != null) {
 
 			if ("exit".equals(cmd)) {
-				String ip = m.getMyIP();
-				String contactIP = m.getContactIP();
+				String ip = m.getMyName();
+				String contactIP = m.getContactName();
 				if (m.getMemberList().size() > 1) {
 					// send leave msg to everyone in the system
 					Vector<String> list = m.getMemberList();
