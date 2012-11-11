@@ -44,6 +44,13 @@ public class FileReplication implements Runnable {
 	    	e.printStackTrace();
 	    }
 		m.sendMsg(m.filerep_sock, nodeName, mList, Machine.FILE_OPERATIONS_PORT);
+		
+		try {
+			WriteLog.writelog(m.myName, "sent "+mList.toString() + " to "+ nodeName);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	
@@ -65,7 +72,12 @@ public class FileReplication implements Runnable {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();			
 		}
-		
+		try {
+			WriteLog.writelog(m.myName, "received "+returnList.toString() +" through "+ Integer.toString(Machine.FILE_OPERATIONS_PORT));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return(returnList);
 	}
 	
@@ -88,7 +100,12 @@ public class FileReplication implements Runnable {
 						return (firstLength - secondLength);
 					}
 				});
-
+		try {
+			WriteLog.writelog(m.myName, "sorted node_file_map - "+ keys.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return keys;  //TODO need to verify that sorting on tempkeys actually affects also keys
 	
 	}
@@ -112,7 +129,12 @@ public class FileReplication implements Runnable {
 						return (firstLength - secondLength);
 					}
 				});
-
+		try {
+			WriteLog.writelog(m.myName, "sorted file_node_map - "+ keys.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return keys;  //TODO need to verify that sorting on tempkeys actually affects also keys
 	}
 	
@@ -131,6 +153,13 @@ public class FileReplication implements Runnable {
 		actAvg = (float)cumCnt/(float)m.node_file_map.keySet().size();
 		
 		intAvg = (int)actAvg;
+		
+		try {
+			WriteLog.writelog(m.myName, "average number of files per server - "+ Integer.toString(intAvg));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return(intAvg);
 	}
 	
@@ -147,7 +176,14 @@ public class FileReplication implements Runnable {
 		
 		file_node_keys = sort_file_node_map();
 		
-		
+		try {
+			WriteLog.writelog(m.myName, "balancefiles called ");
+			WriteLog.writelog(m.myName, "initial node_file_keys - "+node_file_keys.toString());
+			WriteLog.writelog(m.myName, "initial file_node_keys - "+file_node_keys.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		for(String tempKey: file_node_keys)
 		{
 			if (m.file_node_map.get(tempKey).size() < min_rep)
@@ -180,9 +216,9 @@ public class FileReplication implements Runnable {
 					msgList.add(tempKey);
 					msgList.add(tempKey);
 					msgList.add(nodeList.firstElement());
-					
-			
+								
 					sendListMsg(msgList, targetNode);
+					
 					m.file_node_map.get(tempKey).add(targetNode);
 					m.node_file_map.get(targetNode).add(tempKey);
 					
@@ -190,6 +226,14 @@ public class FileReplication implements Runnable {
 				}
 			} else
 				break;
+		}
+		
+		try {
+			WriteLog.writelog(m.myName, "balancefiles called, stage one done");
+			WriteLog.writelog(m.myName, "final file_node_keys - "+file_node_keys.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 		int lowAvgFiles = 0;
@@ -232,11 +276,13 @@ public class FileReplication implements Runnable {
 			}
 			Vector<String> cpmsgList=new Vector<String>();
 			cpmsgList.add("C");
-			cpmsgList.add(nodetoCopyFrom);
 			cpmsgList.add(filetoCopy);
-	
+			cpmsgList.add(filetoCopy);
+			cpmsgList.add(nodetoCopyFrom);
+			
 			sendListMsg(cpmsgList, firstKey);
-	
+			
+			
 			Vector<String> rmmsgList=new Vector<String>();
 			rmmsgList.add("R");
 			rmmsgList.add(filetoCopy);
@@ -269,7 +315,13 @@ public class FileReplication implements Runnable {
 				continue;
 			}
 		}	
-		
+		try {
+			WriteLog.writelog(m.myName, "balancefiles called, stage two done ");
+			WriteLog.writelog(m.myName, "final node_file_keys - "+node_file_keys.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	private Vector<String> sort_checkReplies()
@@ -388,6 +440,14 @@ public class FileReplication implements Runnable {
 								}
 									
 								m.file_node_map.put(recvList.elementAt(2), cpnodes);
+							
+								try {
+									WriteLog.writelog(m.myName, "node_file_map after PUT - "+m.node_file_map.toString());
+									WriteLog.writelog(m.myName, "file_node_map after PUT - "+m.file_node_map.toString());
+								} catch (IOException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
 							}
 						
 						}
@@ -424,6 +484,13 @@ public class FileReplication implements Runnable {
 								m.node_file_map.get(key).remove(recvList.elementAt(1));
 							}
 							m.file_node_map.remove(recvList.elementAt(1));
+							try {
+								WriteLog.writelog(m.myName, "node_file_map after DELETE - "+m.node_file_map.toString());
+								WriteLog.writelog(m.myName, "file_node_map after DELETE - "+m.file_node_map.toString());
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}
 						else if (recvList.firstElement() == "I")
 						{
@@ -445,6 +512,13 @@ public class FileReplication implements Runnable {
 							m.node_file_map.put(nodeid, recvList);
 						
 							checkReplies.put(nodeid, 1);
+							try {
+								WriteLog.writelog(m.myName, "node_file_map after INFO_QUERY_RESP - "+m.node_file_map.toString());
+								WriteLog.writelog(m.myName, "file_node_map after INFO_QUERY_RESP - "+m.file_node_map.toString());
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}
 					}
 					else
@@ -460,6 +534,12 @@ public class FileReplication implements Runnable {
 							thread.start();
 							
 							m.myFileList.add(copyFN);
+							try {
+								WriteLog.writelog(m.myName, "myFileList after COPY - "+m.myFileList.toString());
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}
 						else if (recvList.firstElement() == "R")
 						{
@@ -468,7 +548,12 @@ public class FileReplication implements Runnable {
 							File f = new File(removeF);
 							f.delete();
 							m.myFileList.remove(removeF);
-							//update local file list
+							try {
+								WriteLog.writelog(m.myName, "myFileList after REMOVE - "+m.myFileList.toString());
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}
 
 						else if (recvList.firstElement() == "Q")
