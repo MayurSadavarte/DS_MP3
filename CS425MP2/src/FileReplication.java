@@ -131,6 +131,8 @@ public class FileReplication implements Runnable {
 		return(intAvg);
 	}
 	
+	
+	
 	public void balanceFiles()
 	{
 		// TODO - called from ContactAddRemove when any node adds or leaves the network, used only by master
@@ -254,6 +256,8 @@ public class FileReplication implements Runnable {
 
 		return keys;  //TODO need to verify that sorting on tempkeys actually affects also keys
 	}
+	
+	
 	
 	public void reformFileInfo()
 	{
@@ -433,7 +437,7 @@ public class FileReplication implements Runnable {
 							for(String f: m.myFileList)
 								qMsg.add(f);
 							
-							sendListMsg(qMsg, m.masterName);
+							sendListMsg(qMsg, recvList.elementAt(1));
 						}
 					}
 					

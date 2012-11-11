@@ -10,13 +10,6 @@ public class FileTransferServer implements Runnable {
 	
 	public void start()
 	{
-		try {
-			fservSock = new ServerSocket(Machine.FILE_TRANSFER_PORT);
-	    }
-	    catch (IOException e) {
-	        System.out.println(e);
-	    }   
-		
 		Thread server_thread = new Thread(this);
 		server_thread.start();
 	}
