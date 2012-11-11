@@ -26,7 +26,7 @@ public class FileReplication implements Runnable {
 	
 	private void sendListMsg(Vector<String> msgList, String nodeName)
 	{
-		String mList = null;
+		byte[] mList = null;
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 	    try {
 	    	ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -34,7 +34,7 @@ public class FileReplication implements Runnable {
 	    	oos.flush();
 	    	// get the byte array of the object
 	    	//byte[] Buf= baos.toByteArray();
-	    	mList = baos.toString();
+	    	mList = baos.toByteArray();
 	    } catch(IOException e) {
 	    	e.printStackTrace();
 	    }

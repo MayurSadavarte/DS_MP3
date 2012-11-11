@@ -23,7 +23,7 @@ public class ContactAddRemove implements Runnable {
 
 	
 	public void sendMemberListToIncoming(DatagramSocket s, String ip_addr) {
-		String mList = null;
+		byte[] mList = null;
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 	    try {
 	    	ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -31,8 +31,7 @@ public class ContactAddRemove implements Runnable {
 	    	oos.flush();
 	    	//TODO - need to decide whether we need to send length also in first packet and then actual packet
 	    	// get the byte array of the object
-	    	//byte[] Buf= baos.toByteArray();
-	    	mList = baos.toString();
+	    	mList = baos.toByteArray();
 	    } catch(IOException e) {
 	    	e.printStackTrace();
 	    }

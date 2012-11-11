@@ -73,14 +73,15 @@ public class Machine {
 	 */
 	@SuppressWarnings("unchecked")
 	public void getMemberlistFromIP(String ip) {
-		String joinMsg, joinbaos=null;
+		String joinMsg; 
+		byte[] joinbaos=null;
 		joinMsg = 'J'+myName;
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
 			ObjectOutputStream oos = new ObjectOutputStream(baos);
 			oos.writeObject(joinMsg);
 	    	oos.flush();
-	    	joinbaos = baos.toString();
+	    	joinbaos = baos.toByteArray();
 		} catch(IOException e) {
 	    	e.printStackTrace();
 	    }
@@ -122,12 +123,12 @@ public class Machine {
 	 * send an add message to the first machine in the system
 	 */
 	@SuppressWarnings("resource")
-	public void sendMsg(DatagramSocket sock, String ip, String msg, int portN) {
+	public void sendMsg(DatagramSocket sock, String ip, byte[] msg, int portN) {
 		try {
 			InetAddress ipAddr = InetAddress.getByName(ip);
-			byte[] sendData = msg.getBytes();
-			DatagramPacket sendPacket = new DatagramPacket(sendData,
-					sendData.length, ipAddr, portN);
+			//byte[] sendData = msg.getBytes();
+			DatagramPacket sendPacket = new DatagramPacket(msg,
+					msg.length, ipAddr, portN);
 			sock.send(sendPacket);
 		} catch (SocketException e) {
 			e.printStackTrace();
@@ -175,7 +176,7 @@ public class Machine {
 	public void sendMsgToAllNodes(String nodeIP, String cmd)
 	{
 		String addOrRemMsg = null;
-		String fmsg = null;
+		byte[] fmsg = null;
 		if (cmd == "ADD")
 			addOrRemMsg = 'A'+nodeIP;
 		else if (cmd == "REM")
@@ -185,8 +186,8 @@ public class Machine {
 	    	ObjectOutputStream oos = new ObjectOutputStream(baos);
 	    	oos.writeObject(addOrRemMsg);
 	    	oos.flush();
-	    	//byte[] Buf= baos.toByteArray();
-	    	fmsg = baos.toString();
+	    	fmsg= baos.toByteArray();
+	    	//fmsg = baos.toString();
 	    } catch(IOException e) {
 	    	e.printStackTrace();
 	    }
@@ -228,6 +229,7 @@ public class Machine {
 		m.memberList = new Vector<String>();
 		m.myFileList = new Vector<String>();
 		
+		System.out.println("in machine main: program started!!");
 		try {
 			m.membership_sock = new DatagramSocket(Machine.MEMBERSHIP_PORT);
 		} catch (SocketException e) {
