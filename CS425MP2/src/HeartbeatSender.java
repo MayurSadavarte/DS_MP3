@@ -18,6 +18,8 @@ public class HeartbeatSender implements Runnable{
 	private void sendHeartbeat(String nextIP)
 	{
 		String sendMsg = m.myName;
+		byte[] sendbytes=null;
+		System.out.println("in heartbeat sender: will send" + sendMsg + "in a heartbeat message");
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 	    try {
 	    	ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -25,12 +27,13 @@ public class HeartbeatSender implements Runnable{
 	    	oos.flush();
 	    	//TODO - need to decide whether we need to send length also in first packet and then actual packet
 	    	// get the byte array of the object
-	    	//byte[] Buf= baos.toByteArray();
-	    	sendMsg = baos.toString();
+	    	sendbytes= baos.toByteArray();
+	    	//sendMsg = baos.toString();
+	    	System.out.println("in heartbeat sender: will actually send" + sendMsg + "in a heartbeat message");
 	    } catch(IOException e) {
 	    	e.printStackTrace();
 	    }
-		m.sendMsg(m.heartbeat_sock, nextIP, sendMsg, Machine.HEARTBEAT_PORT);
+		m.sendMsg(m.heartbeat_sock, nextIP, sendbytes, Machine.HEARTBEAT_PORT);
 	}
 	
 	@Override

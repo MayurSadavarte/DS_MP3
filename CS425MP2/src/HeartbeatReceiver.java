@@ -27,6 +27,7 @@ public class HeartbeatReceiver implements Runnable {
 		String recvMsg = null;
 		byte[] recvData = new byte[1024];
 		//recvPacket = new DatagramPacket(recvData,recvData.length);
+		System.out.println("in heartbeat receiver: will now try to receive hbeat!!");
 		
 		try {
 			m.heartbeat_sock.setSoTimeout(3000);
@@ -39,6 +40,7 @@ public class HeartbeatReceiver implements Runnable {
 			ObjectInputStream ois = new ObjectInputStream(bais);
 			recvMsg = (String)ois.readObject();
 			WriteLog.writelog(m.myName, "received from UDP "+recvMsg);
+			System.out.println("in heartbeat receiver: received heartbeat from" + recvMsg);
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();			
 		} catch (SocketTimeoutException e) {
