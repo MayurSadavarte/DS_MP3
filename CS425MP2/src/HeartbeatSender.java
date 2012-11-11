@@ -1,5 +1,8 @@
 
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.Random;
 import java.util.Vector;
 
@@ -12,6 +15,24 @@ public class HeartbeatSender implements Runnable{
 		m = m2;
 	}
 
+	private void sendHeartbeat(String nextIP)
+	{
+		String sendMsg = m.myName;
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	    try {
+	    	ObjectOutputStream oos = new ObjectOutputStream(baos);
+	    	oos.writeObject(sendMsg);
+	    	oos.flush();
+	    	//TODO - need to decide whether we need to send length also in first packet and then actual packet
+	    	// get the byte array of the object
+	    	//byte[] Buf= baos.toByteArray();
+	    	sendMsg = baos.toString();
+	    } catch(IOException e) {
+	    	e.printStackTrace();
+	    }
+		m.sendMsg(m.heartbeat_sock, nextIP, sendMsg, Machine.HEARTBEAT_PORT);
+	}
+	
 	@Override
 	public void run() {
 		while(true){
@@ -26,7 +47,7 @@ public class HeartbeatSender implements Runnable{
 		//	double r = g.nextDouble(); 
 		//	if(r>0.15){
 			if(m.heartbeat_sock != null)
-				m.sendMsg(m.heartbeat_sock, nextIP, myIP, Machine.HEARTBEAT_PORT);
+				sendHeartbeat(nextIP);
 		//	}
 			
 			//System.out.println("send HB to "+ nextIP);
