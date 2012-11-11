@@ -244,7 +244,8 @@ public class Machine {
 			m.masterName = m.myName;
 			m.memberList.add(m.myName);
 			//m.file_node_map.put(null, m.memberList);
-			m.node_file_map.put(m.myName, null);
+			Vector<String> emptyList = new Vector<String>();
+			m.node_file_map.put(m.myName, emptyList);
 			m.startAddRem();
 		}
 		else
