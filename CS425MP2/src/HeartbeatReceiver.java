@@ -39,7 +39,7 @@ public class HeartbeatReceiver implements Runnable {
 		
 			ObjectInputStream ois = new ObjectInputStream(bais);
 			recvMsg = (String)ois.readObject();
-			WriteLog.writelog(m.myName, "received from UDP "+recvMsg);
+			//WriteLog.writelog(m.myName, "received from UDP "+recvMsg);
 	//		System.out.println("in heartbeat receiver: received heartbeat from" + recvMsg);
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();			
