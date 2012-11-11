@@ -18,6 +18,7 @@ public class FileReplication implements Runnable {
 	public FileTransferServer FileServer;
 	public int min_rep=3;
 	private boolean rep_info_reformed = false;
+	HashMap<String, Integer> checkReplies = new HashMap<String, Integer>();
 	
 	public FileReplication(Machine machine)
 	{
@@ -47,7 +48,7 @@ public class FileReplication implements Runnable {
 	{
 		DatagramPacket recvPacket;
 		byte[] recvData = new byte[1024];
-		Vector<String> returnList=null;
+		Vector<String> returnList=new Vector<String>();
 		try {
 			recvPacket = new DatagramPacket(recvData,recvData.length);
 			m.filerep_sock.receive(recvPacket);
@@ -235,11 +236,51 @@ public class FileReplication implements Runnable {
 		
 	}
 	
+	private Vector<String> sort_checkReplies()
+	{
+		Vector<String> keys = new Vector<String>(checkReplies.keySet());
+		final HashMap<String, Integer> temp_checkReplies = checkReplies;
+		//List<String> tempKeys = (List<String>)keys;
+		//List<String> tempKeys = new ArrayList<String>(keys);
+		
+		Collections.sort(keys, new Comparator<String>(){
+					public int compare(String firstkey, String secondkey){
+						//String firstkey = (String)first;
+						//String secondkey = (String)second;
+						
+						return (temp_checkReplies.get(firstkey)-temp_checkReplies.get(secondkey));
+					}
+				});
+
+		return keys;  //TODO need to verify that sorting on tempkeys actually affects also keys
+	}
+	
 	public void reformFileInfo()
 	{
 		// TODO - called when a node recieves R message and now i am the new master
 		// hence i need to reform the file replication info in the maps
 		// check rep_info_reformed after sending the req to all nodes
+		Vector<String> repMsg = new Vector<String>();
+	
+		repMsg.add("Q");
+		repMsg.add(m.myName);
+		
+		for(String member: m.memberList)
+		{
+			sendListMsg(repMsg, member);
+			checkReplies.put(member, 0);
+		}
+		rep_info_reformed = false;
+		while(!rep_info_reformed)
+		{
+			Vector<String> sortedKeys = sort_checkReplies();
+			if (checkReplies.get(sortedKeys.firstElement()) == 0)
+				continue;
+			else
+				rep_info_reformed = true;
+		}
+		
+		
 	}
 	
 	public void start()
@@ -261,7 +302,7 @@ public class FileReplication implements Runnable {
 		 * listen to messages based on whether you are a master
 		 * start transfer thread based on the control messages
 		 */
-		Vector<String> recvList=null;
+		Vector<String> recvList=new Vector<String>();
 		try {
 			m.filerep_sock = new DatagramSocket(Machine.FILE_OPERATIONS_PORT);
 		} catch (SocketException e) {
@@ -286,7 +327,20 @@ public class FileReplication implements Runnable {
 						{
 							// master receiving PUT
 							// send copy msg to primary machine and backup machine
-							
+							if(m.file_node_map.containsKey(recvList.lastElement())){
+								System.out.println("file already exists");
+							}else{
+								Vector<String> sortedKey = sort_node_file_map();
+								
+								//m.sendMsg(m.filerep_sock, sortedKey.firstElement(), , portN)
+								Vector<String> cpMsg = new Vector<String>();
+								cpMsg.add("C");
+								cpMsg.add(recvList.elementAt(1));
+								cpMsg.add(recvList.elementAt(2));
+								cpMsg.add(recvList.elementAt(3));
+								sendListMsg(cpMsg, sortedKey.elementAt(0));
+								if(sortedKey.size()>1) sendListMsg(cpMsg, sortedKey.elementAt(1));
+							}
 						
 						}
 						else if (recvList.firstElement() == "G")
@@ -294,20 +348,52 @@ public class FileReplication implements Runnable {
 							// master receiving GET
 							// find primary machine
 							// send setSource msg to primary machine
+							if(!m.file_node_map.containsKey(recvList.lastElement())){
+								System.out.println("file dont exists");
+							}else{
+								String primaryM = m.file_node_map.get(recvList.elementAt(1)).elementAt(0);
 							
+							Vector<String> cpMsg = new Vector<String>();
+							cpMsg.add(primaryM);
+							sendListMsg(cpMsg, recvList.elementAt(2));	
+								
+							}
 						}
 						else if (recvList.firstElement() == "D")
 						{
 							// master receiving DELETE
 							// find primary machine
 							// send remove msg to primary machine and backup machine
+							Vector<String> storeMs = m.file_node_map.get(recvList.elementAt(1));
+							
+							Vector<String> cpMsg = new Vector<String>();
+							cpMsg.add("R");
+							cpMsg.add(recvList.elementAt(1));
+							
+							for(String key : storeMs)
+								sendListMsg(cpMsg, key);
 							
 						}
 						else if (recvList.firstElement() == "I")
 						{
 							// master receives answer to replication query	
+							Vector<String> repInfo = new Vector<String>();
+							for(Integer i=2; i<recvList.size(); i++)
+							{
+								if(!m.file_node_map.containsKey(recvList.get(i)))
+								{
+									Vector<String> tempNodeLst = new Vector<String>();
+									tempNodeLst.add(recvList.elementAt(1));
+									m.file_node_map.put(recvList.elementAt(i), tempNodeLst);
+								}
+								else
+									m.file_node_map.get(recvList.elementAt(i)).add(recvList.elementAt(1));
+							}
+							recvList.remove(0);
+							String nodeid = recvList.remove(1);
+							m.node_file_map.put(nodeid, recvList);
 						
-							rep_info_reformed = true;
+							checkReplies.put(nodeid, 1);
 						}
 					}
 					else
@@ -315,10 +401,10 @@ public class FileReplication implements Runnable {
 						if (recvList.firstElement() == "C")
 						{
 						// machine receiving COPY 
-							String copyFN = recvList.lastElement();
-							String serverIP = ;//TODO get client ip
+							String copyFN = recvList.elementAt(2);
+							String serverIP = recvList.elementAt(3);//TODO get client ip
 							
-							Runnable runnable = new FileTransferClient(copyFN, serverIP);
+							Runnable runnable = new FileTransferClient(copyFN, recvList.elementAt(1), serverIP);
 							Thread thread = new Thread(runnable);
 							thread.start();
 							
@@ -326,22 +412,28 @@ public class FileReplication implements Runnable {
 						else if (recvList.firstElement() == "R")
 						{
 							// machine receiving REM
-							String removeF = cmd;//TODO get remove file name 
+							String removeF = recvList.elementAt(1);//TODO get remove file name 
 							File f = new File(removeF);
 							f.delete();
 							//update local file list
 						}
-						else if (recvList.firstElement() == "S")//TODO
+						/*else if (recvList.firstElement() == "S")//TODO
 						{
 							// machine receiving setSource msg
 							String sourceFN = ;
 							fileserver.setSource(sourceFN);
 							//update local file list
-						}
+						}*/
 						else if (recvList.firstElement() == "Q")
 						{
 							// machine receiving REPLICATION_INFO_QUERY
+							Vector<String> qMsg = new Vector<String>();
+							qMsg.add("I");
+							qMsg.add(m.myName);
+							for(String f: m.myFileList)
+								qMsg.add(f);
 							
+							sendListMsg(qMsg, m.masterName);
 						}
 					}
 					

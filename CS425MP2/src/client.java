@@ -1,12 +1,15 @@
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Scanner;
+import java.util.Vector;
 
 import failureDetection_Membership.HeartbeatSender;
 
@@ -18,12 +21,25 @@ public class client {
 	 */
 	public static FileTransferServer server;
 	public static DatagramSocket sock = null;
+	public static String myName;
 	
 	public static void main(String[] args) {
 		
 		//args[0] is the ip address connection to 
 		
+		try {
+			sock = new DatagramSocket(Machine.FILE_OPERATIONS_PORT);
+		} catch (SocketException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
 		
+		try {
+			myName = InetAddress.getLocalHost().getHostName();
+		} catch (UnknownHostException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		Scanner s = new Scanner(System.in);
 		String cmd = null;
 		
@@ -39,33 +55,86 @@ public class client {
 				System.exit(0);
 			}
 			else if(cmd.startsWith("put ")){
-				sendMsg(sock, args[0], cmd, Machine.FILE_TRANSFER_PORT);
-				String sourceFN = cmd.substring(4, cmd.indexOf(' ', 4));
-				server.setSource(sourceFN);
+				
+				Vector<String> putMsg = null;
+				putMsg.add("P");
+				putMsg.add(cmd.substring(4, cmd.indexOf(' ', 4)));
+				putMsg.add(cmd.substring(cmd.lastIndexOf(' ')));
+				putMsg.add(myName);
+				byte[] mList = null;
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			    try {
+			    	ObjectOutputStream oos = new ObjectOutputStream(baos);
+			    	oos.writeObject(putMsg);
+			    	oos.flush();
+			    	//TODO - need to decide whether we need to send length also in first packet and then actual packet
+			    	// get the byte array of the object
+			    	mList = baos.toByteArray();
+			    } catch(IOException e) {
+			    	e.printStackTrace();
+			    }
+				
+				//sendMsg(sock, args[0], cmd, Machine.FILE_TRANSFER_PORT);
+				//String sourceFN = cmd.substring(4, cmd.indexOf(' ', 4));
+				//server.setSource(sourceFN);
 			}
 			else if(cmd.startsWith("get ")){
-				sendMsg(sock, args[0], cmd, Machine.FILE_TRANSFER_PORT);
-				String serverIP = recvStrMsg();
+				Vector<String> getMsg = null;
+				getMsg.add("G");
+				getMsg.add(cmd.substring(4, cmd.indexOf(' ', 4)));
+				getMsg.add(myName);
+				byte[] mList = null;
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			    try {
+			    	ObjectOutputStream oos = new ObjectOutputStream(baos);
+			    	oos.writeObject(getMsg);
+			    	oos.flush();
+			    	
+			    	// get the byte array of the object
+			    	mList = baos.toByteArray();
+			    } catch(IOException e) {
+			    	e.printStackTrace();
+			    }
+				
+				sendMsg(sock, args[0], mList, Machine.FILE_TRANSFER_PORT);
+				Vector<String> serverIP = recvListMsg();
 				String copyFN = cmd.substring(cmd.lastIndexOf(' '));
 				
-				Runnable runnable = new FileTransferClient(copyFN, serverIP);
+				Runnable runnable = new FileTransferClient(copyFN, cmd.substring(4, cmd.indexOf(' ', 4)),serverIP.elementAt(0));
 				Thread thread = new Thread(runnable);
 				thread.start();
 			}
 			else if(cmd.startsWith("delete ")){
-				sendMsg(sock, args[0], cmd, Machine.FILE_TRANSFER_PORT);
+				Vector<String> getMsg = null;
+				getMsg.add("D");
+				getMsg.add(cmd.substring(4, cmd.indexOf(' ', 4)));
+				
+				byte[] mList = null;
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			    try {
+			    	ObjectOutputStream oos = new ObjectOutputStream(baos);
+			    	oos.writeObject(getMsg);
+			    	oos.flush();
+			    	
+			    	// get the byte array of the object
+			    	mList = baos.toByteArray();
+			    } catch(IOException e) {
+			    	e.printStackTrace();
+			    }
+				
+				sendMsg(sock, args[0], mList, Machine.FILE_TRANSFER_PORT);
 			}
 			
 		}
 
 	}
 	
-	public static void sendMsg(DatagramSocket sock, String ip, String msg, int portN) {
+	public static void sendMsg(DatagramSocket sock, String ip, byte[] msg, int portN) {
 		try {
 			InetAddress ipAddr = InetAddress.getByName(ip);
-			byte[] sendData = msg.getBytes();
-			DatagramPacket sendPacket = new DatagramPacket(sendData,
-					sendData.length, ipAddr, portN);
+			//byte[] sendData = msg.getBytes();
+			DatagramPacket sendPacket = new DatagramPacket(msg,
+					msg.length, ipAddr, portN);
 			sock.send(sendPacket);
 		} catch (SocketException e) {
 			e.printStackTrace();
@@ -101,4 +170,26 @@ public class client {
 		return recvMsg;
 	}
 
+	private static Vector<String> recvListMsg()
+	{
+		DatagramPacket recvPacket;
+		byte[] recvData = new byte[1024];
+		Vector<String> returnList=new Vector<String>();
+		try {
+			recvPacket = new DatagramPacket(recvData,recvData.length);
+			sock.receive(recvPacket);
+			//TODO - need to decide whether we need to define this length or not!!
+			ByteArrayInputStream bais = new ByteArrayInputStream(recvData);
+		
+			ObjectInputStream ois = new ObjectInputStream(bais);
+			returnList = (Vector<String>)ois.readObject();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();			
+		}
+		
+		return(returnList);
+	}
+	
 }
