@@ -57,7 +57,9 @@ public class FileTransferServer implements Runnable {
 	
 			      Socket sock = servsock.accept();
 			      System.out.println("Accepted connection : " + sock);
-	
+			      
+			      
+			      
 			      // sendfile
 			      File myFile = new File (sourceFN);
 			      byte [] mybytearray  = new byte [(int)myFile.length()];

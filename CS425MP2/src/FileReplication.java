@@ -1,5 +1,6 @@
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -283,22 +284,28 @@ public class FileReplication implements Runnable {
 						//need to take decision based on the recvMsg opcode
 						if (recvList.firstElement() == "P")
 						{
-						// master receiving PUT
+							// master receiving PUT
+							// send copy msg to primary machine and backup machine
+							
 						
 						}
 						else if (recvList.firstElement() == "G")
 						{
-						// master receiving GET
-						
+							// master receiving GET
+							// find primary machine
+							// send setSource msg to primary machine
+							
 						}
 						else if (recvList.firstElement() == "D")
 						{
-						// master receiving DELETE
+							// master receiving DELETE
+							// find primary machine
+							// send remove msg to primary machine and backup machine
 							
 						}
 						else if (recvList.firstElement() == "I")
 						{
-						// master receives answer to replication query	
+							// master receives answer to replication query	
 						
 							rep_info_reformed = true;
 						}
@@ -308,16 +315,32 @@ public class FileReplication implements Runnable {
 						if (recvList.firstElement() == "C")
 						{
 						// machine receiving COPY 
+							String copyFN = recvList.lastElement();
+							String serverIP = ;//TODO get client ip
+							
+							Runnable runnable = new FileTransferClient(copyFN, serverIP);
+							Thread thread = new Thread(runnable);
+							thread.start();
 							
 						}
 						else if (recvList.firstElement() == "R")
 						{
-						// machine receiving REM
-							
+							// machine receiving REM
+							String removeF = cmd;//TODO get remove file name 
+							File f = new File(removeF);
+							f.delete();
+							//update local file list
+						}
+						else if (recvList.firstElement() == "S")//TODO
+						{
+							// machine receiving setSource msg
+							String sourceFN = ;
+							fileserver.setSource(sourceFN);
+							//update local file list
 						}
 						else if (recvList.firstElement() == "Q")
 						{
-						// machine receiving REPLICATION_INFO_QUERY
+							// machine receiving REPLICATION_INFO_QUERY
 							
 						}
 					}
