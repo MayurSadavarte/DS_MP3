@@ -16,7 +16,7 @@ public class FileReplication implements Runnable {
 	private Machine m;
 	public FileTransferClient FileClient;
 	public FileTransferServer FileServer;
-	public int min_rep=3;
+	public int min_rep=2;
 	private boolean rep_info_reformed = false;
 	HashMap<String, Integer> checkReplies = new HashMap<String, Integer>();
 	
@@ -153,15 +153,36 @@ public class FileReplication implements Runnable {
 				{
 					Vector<String> nodeList = m.file_node_map.get(tempKey);
 					String targetNode = node_file_keys.firstElement();
-				
+					boolean goodNode=false;
+					Integer tmpIndex=0;
+					if(!nodeList.contains(targetNode))
+						goodNode = true;
+					while(!goodNode)
+					{	
+						if(tmpIndex != node_file_keys.size()-1)
+						{
+							tmpIndex = tmpIndex+1;
+							targetNode=node_file_keys.elementAt(tmpIndex);
+							if(!nodeList.contains(targetNode))
+								goodNode = true;
+						} else {
+							System.out.println("Couldn't find good node for replication in balancing algorithm");
+							targetNode = null;
+						}
+					}
+					if(targetNode == null)
+						break;
 					Vector<String> msgList=new Vector<String>();
 					msgList.add("C");
-					msgList.add(nodeList.firstElement());
 					msgList.add(tempKey);
+					msgList.add(tempKey);
+					msgList.add(nodeList.firstElement());
+					
 			
 					sendListMsg(msgList, targetNode);
 					m.file_node_map.get(tempKey).add(targetNode);
 					m.node_file_map.get(targetNode).add(tempKey);
+					
 					node_file_keys = sort_node_file_map();
 				}
 			} else
@@ -173,27 +194,16 @@ public class FileReplication implements Runnable {
 		int highAvgFiles = lowAvgFiles + 1;
 		
 		int firstIndex=0, lastIndex=0;
-		lastIndex = node_file_keys.size();
+		lastIndex = node_file_keys.size()-1;
 		
 		String firstKey = node_file_keys.get(firstIndex);
-		String lastKey = node_file_keys.get(lastIndex-1);  //TODO need to be sure about the maximum index value
+		String lastKey = node_file_keys.get(lastIndex);  //TODO need to be sure about the maximum index value
 		
 		
 		
 		while(m.node_file_map.get(firstKey).size() < lowAvgFiles)
 		{
 			//have removed this 'm.node_file_map.get(lastIndex).size() > highAvgFiles' from the while condition
-			
-			if(m.node_file_map.get(firstKey).size() >= lowAvgFiles)
-			{
-				firstKey = node_file_keys.get(firstIndex+1); //TODO - does mod operation need to be done here?
-				continue;
-			}
-			if(m.node_file_map.get(lastKey).size() <= highAvgFiles)
-			{
-				lastKey = node_file_keys.get(lastIndex-1); //same as TODO above
-				continue;
-			}
 			
 			Vector<String> filesAtLastNode = m.node_file_map.get(node_file_keys.get(lastIndex));
 			String filetoCopy=null;
@@ -215,6 +225,7 @@ public class FileReplication implements Runnable {
 			if (filetoCopy == null)
 			{
 				System.out.println("Couldn't find a file which can be replicated");
+				break;
 			}
 			Vector<String> cpmsgList=new Vector<String>();
 			cpmsgList.add("C");
@@ -234,6 +245,26 @@ public class FileReplication implements Runnable {
 			m.node_file_map.get(firstKey).add(filetoCopy);
 			m.node_file_map.get(lastKey).remove(filetoCopy);
 		
+
+			if(m.node_file_map.get(firstKey).size() >= lowAvgFiles)
+			{
+				firstIndex=firstIndex+1;
+				if(firstIndex>=lastIndex)
+					break;
+				firstKey = node_file_keys.get(firstIndex); //TODO - does mod operation need to be done here?
+				if(m.node_file_map.get(lastKey).size() <= highAvgFiles)
+				{
+					lastIndex=lastIndex-1;
+					lastKey = node_file_keys.get(lastIndex); //same as TODO above
+				}
+				continue;
+			}
+			if(m.node_file_map.get(lastKey).size() <= highAvgFiles)
+			{
+				lastIndex=lastIndex-1;
+				lastKey = node_file_keys.get(lastIndex); //same as TODO above
+				continue;
+			}
 		}	
 		
 	}
@@ -331,19 +362,29 @@ public class FileReplication implements Runnable {
 						{
 							// master receiving PUT
 							// send copy msg to primary machine and backup machine
-							if(m.file_node_map.containsKey(recvList.lastElement())){
+							if(m.file_node_map.containsKey(recvList.elementAt(2))){
 								System.out.println("file already exists");
 							}else{
 								Vector<String> sortedKey = sort_node_file_map();
 								
 								//m.sendMsg(m.filerep_sock, sortedKey.firstElement(), , portN)
+								Vector<String> cpnodes = new Vector<String>();
 								Vector<String> cpMsg = new Vector<String>();
 								cpMsg.add("C");
 								cpMsg.add(recvList.elementAt(1));
 								cpMsg.add(recvList.elementAt(2));
 								cpMsg.add(recvList.elementAt(3));
 								sendListMsg(cpMsg, sortedKey.elementAt(0));
-								if(sortedKey.size()>1) sendListMsg(cpMsg, sortedKey.elementAt(1));
+								cpnodes.add(sortedKey.elementAt(0));
+								m.node_file_map.get(sortedKey.elementAt(0)).add(recvList.elementAt(2));
+								if(sortedKey.size()>1) 
+								{
+									sendListMsg(cpMsg, sortedKey.elementAt(1));
+									cpnodes.add(sortedKey.elementAt(1));
+									m.node_file_map.get(sortedKey.elementAt(1)).add(recvList.elementAt(2));
+								}
+									
+								m.file_node_map.put(recvList.elementAt(2), cpnodes);
 							}
 						
 						}
@@ -370,13 +411,16 @@ public class FileReplication implements Runnable {
 							// send remove msg to primary machine and backup machine
 							Vector<String> storeMs = m.file_node_map.get(recvList.elementAt(1));
 							
-							Vector<String> cpMsg = new Vector<String>();
-							cpMsg.add("R");
-							cpMsg.add(recvList.elementAt(1));
+							Vector<String> dMsg = new Vector<String>();
+							dMsg.add("R");
+							dMsg.add(recvList.elementAt(1));
 							
 							for(String key : storeMs)
-								sendListMsg(cpMsg, key);
-							
+							{
+								sendListMsg(dMsg, key);
+								m.node_file_map.get(key).remove(recvList.elementAt(1));
+							}
+							m.file_node_map.remove(recvList.elementAt(1));
 						}
 						else if (recvList.firstElement() == "I")
 						{
@@ -412,6 +456,7 @@ public class FileReplication implements Runnable {
 							Thread thread = new Thread(runnable);
 							thread.start();
 							
+							m.myFileList.add(copyFN);
 						}
 						else if (recvList.firstElement() == "R")
 						{
@@ -419,6 +464,7 @@ public class FileReplication implements Runnable {
 							String removeF = recvList.elementAt(1);//TODO get remove file name 
 							File f = new File(removeF);
 							f.delete();
+							m.myFileList.remove(removeF);
 							//update local file list
 						}
 						/*else if (recvList.firstElement() == "S")//TODO
