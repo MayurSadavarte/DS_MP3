@@ -2,7 +2,7 @@ import java.net.*;
 import java.io.*;
 
 public class FileTransferServer implements Runnable {
-	/*
+	
 	ServerSocket fservSock = null;
 	DataInputStream is;
 	DataOutputStream os;
@@ -20,7 +20,7 @@ public class FileTransferServer implements Runnable {
 		Thread server_thread = new Thread(this);
 		server_thread.start();
 	}
-	
+	/*
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
@@ -39,9 +39,9 @@ public class FileTransferServer implements Runnable {
 	
 	private String sourceFN;
 	
-	public FileTransferServer(String s){
-		sourceFN = s;
-	}
+	//public FileTransferServer(String s){
+	//	sourceFN = s;
+	//}
 	
 	public void run(){
 		

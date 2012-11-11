@@ -17,7 +17,7 @@ public class client {
 	public static void main(String[] args) {
 		
 		//args[0] is the ip address connection to 
-		public DatagramSocket sock;
+		DatagramSocket sock = null;
 		
 		Scanner s = new Scanner(System.in);
 		String cmd = null;
@@ -30,9 +30,9 @@ public class client {
 				sendMsg(sock, args[0], cmd, Machine.FILE_TRANSFER_PORT);
 				String sourceFN = cmd.substring(4, cmd.indexOf(' ', 4));
 				
-				Runnable runnable = new FileTransferServer(sourceFN);
-				Thread thread = new Thread(runnable);
-				thread.start();
+				//Runnable runnable = new FileTransferServer(sourceFN);
+				//Thread thread = new Thread(runnable);
+				//thread.start();
 				
 			}
 			
