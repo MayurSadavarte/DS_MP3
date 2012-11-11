@@ -40,7 +40,7 @@ public class FileTransferClient implements Runnable {
 	
 	public void run(){
 		
-		int filesize=6022386; // filesize temporary hardcoded
+		int filesize=Integer.MAX_VALUE; // filesize temporary hardcoded
 
 	    long start = System.currentTimeMillis();
 	    int bytesRead;
