@@ -56,6 +56,15 @@ public class FileTransferClient implements Runnable {
 			System.out.println("Connecting...");
 			// receive file
 			
+			try {
+				String myName = InetAddress.getLocalHost().getHostName();
+				WriteLog.writelog(myName, "c:"+copyFN+" s:"+sourceFN+" ip:"+serverIP);
+			} catch (UnknownHostException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+			
 			
 			ObjectOutputStream oos;
 			try {
