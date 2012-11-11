@@ -2,6 +2,7 @@ import java.net.*;
 import java.io.*;
 
 public class FileTransferServer implements Runnable {
+	/*
 	ServerSocket fservSock = null;
 	DataInputStream is;
 	DataOutputStream os;
@@ -34,5 +35,44 @@ public class FileTransferServer implements Runnable {
 			}
 		}
 	}
+	*/
+	
+	private String sourceFN;
+	
+	public FileTransferServer(String s){
+		sourceFN = s;
+	}
+	
+	public void run(){
+		
+		try{
+			ServerSocket servsock = new ServerSocket(Machine.FILE_TRANSFER_PORT);
+		    
+		      System.out.println("Waiting...");
 
+		      Socket sock = servsock.accept();
+		      System.out.println("Accepted connection : " + sock);
+
+		      // sendfile
+		      File myFile = new File (sourceFN);
+		      byte [] mybytearray  = new byte [(int)myFile.length()];
+		      FileInputStream fis = new FileInputStream(myFile);
+		      BufferedInputStream bis = new BufferedInputStream(fis);
+		      bis.read(mybytearray,0,mybytearray.length);
+		      OutputStream os = sock.getOutputStream();
+		      System.out.println("Sending...");
+		      os.write(mybytearray,0,mybytearray.length);
+		      os.flush();
+		      sock.close();
+		      
+		    
+		}catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 }
+
+
+
