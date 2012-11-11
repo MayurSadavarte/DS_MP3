@@ -8,6 +8,11 @@ import java.io.ByteArrayInputStream;
 
 import querier.Server;
 
+/* 
+ * MACHINE CLASS WHICH REPRESENTS GENERAL SERVER IN THE DISTRIBUTED FILE SYSTEM
+ * ONE OF THE MACHINES WILL BE THE MASTER SERVER AND THAT IS DENOTED BY THE BOOLEAN
+ * VARIABLE 'MASTER' IN MACHINE INSTANCE 
+ */
 public class Machine {
 
 	public HashMap<String, Vector<String>> file_node_map;
@@ -16,16 +21,13 @@ public class Machine {
 	public static final int MEMBERSHIP_PORT = 8889;
 	public static final int FILE_OPERATIONS_PORT = 8891;
 	public static final int FILE_TRANSFER_PORT = 8892;
-	//public static final int DEFAULT_CONTACT_PORT = 8888;
 	public static final int HEARTBEAT_PORT = 8890;
 	public static final int QUERY_PORT = 10000;
 	
 	public DatagramSocket membership_sock;
 	public DatagramSocket heartbeat_sock=null;
 	public DatagramSocket filerep_sock;
-	//public DatagramSocket outgoing;
 	public Vector<String> memberList;
-	//private String contactIP;
 	public String myName;
 	public String masterName;
 	public boolean master = false;
@@ -34,14 +36,12 @@ public class Machine {
 	public Machine(boolean mflag) {
 		master = mflag;
 		membership_sock = null;
-		//outgoing = null;
 		memberList = null;
 		myFileList = null;
 		if (master)
 			file_node_map = new HashMap<String, Vector<String>>();
 			node_file_map = new HashMap<String, Vector<String>>();
 		try {
-			//myIP = InetAddress.getLocalHost().getHostAddress();
 			myName = InetAddress.getLocalHost().getHostName();
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
@@ -49,27 +49,23 @@ public class Machine {
 	}
 	public Machine() {
 		membership_sock = null;
-		//outgoing = null;
 		memberList = null;
 		myFileList = null;
 		if (master)
 			file_node_map = new HashMap<String, Vector<String>>();
 			node_file_map = new HashMap<String, Vector<String>>();
 		try {
-			//myIP = InetAddress.getLocalHost().getHostAddress();
 			myName = InetAddress.getLocalHost().getHostName();
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	/**
-	 * get memberlist from the connecting contact
+	/*
+	 * get memberlist from the master
 	 * 
 	 * @param ip
-	 *            contact machine ip
-	 * @param port
-	 *            port number
+	 *            contact machine ip/hostname
 	 */
 	@SuppressWarnings("unchecked")
 	public void getMemberlistFromIP(String ip) {
@@ -112,15 +108,14 @@ public class Machine {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		//recvMsg = new String(recvPacket.getData());
-		
-		//need to review - need to set memberlist using recvPkt
 	}
 
 	
 	
-	/**
-	 * send an add message to the first machine in the system
+	/*
+	 * send an add message to the any machine in the system
+	 * through the udp socket
+	 * all sockets are covered under machine instance
 	 */
 	@SuppressWarnings("resource")
 	public void sendMsg(DatagramSocket sock, String ip, byte[] msg, int portN) {
@@ -140,39 +135,12 @@ public class Machine {
 	}
 	
 	
-	
-	/**
-	 * get msg string from UDP
-	 * 
-	 * @return
+		/* 
+	 * for sending 'ADD' or 'REM' message to all
+	 * the servers in the file system
+	 * called when any server joins the system
+	 * or any existing server leaves the system
 	 */
-	public String recvStrMsg() {
-		DatagramPacket recvPacket;
-		String recvMsg = null;
-		byte[] recvData = new byte[1024];
-		//recvPacket = new DatagramPacket(recvData,recvData.length);
-		
-		try {
-			recvPacket = new DatagramPacket(recvData,recvData.length);
-			
-			membership_sock.receive(recvPacket);
-			//TODO - need to decide whether we need to define this length or not!!
-			ByteArrayInputStream bais = new ByteArrayInputStream(recvData);
-		
-			ObjectInputStream ois = new ObjectInputStream(bais);
-			recvMsg = (String)ois.readObject();
-			WriteLog.writelog(myName, "received from UDP "+recvMsg);
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();			
-		}
-		
-		return recvMsg;
-	}
-
-
-	
 	public void sendMsgToAllNodes(String nodeIP, String cmd)
 	{
 		String addOrRemMsg = null;
@@ -200,8 +168,9 @@ public class Machine {
 	}
 	
 	
-	/**
-	 * start the server socket and listen to membership_sock connection request
+	/*
+	 * start the AddRem instance of machine
+	 * this instance will take care of membership list management 
 	 */
 	public void startAddRem() {
 		
@@ -210,12 +179,21 @@ public class Machine {
 		thread.start();
 	}
 	
-
+	
+	
+	/*
+	 * start file replicator instance of machine
+	 * this instance will take care of all the
+	 * file replication and addition, deletion
+	 * requests
+	 */
 	public void startFileReplication() {
 		
 		FileReplicator = new FileReplication(this);
 		FileReplicator.start();
 	}
+	
+	
 	
 	public static void main(String[] args) {
 		boolean mflag = false;
@@ -237,13 +215,13 @@ public class Machine {
 			e.printStackTrace();
 		}
 		
-		//join
+		
 		if (m.master)
 		{
 		//TODO - need to review the file_node_map.put call
 			m.masterName = m.myName;
 			m.memberList.add(m.myName);
-			//m.file_node_map.put(null, m.memberList);
+			
 			Vector<String> emptyList = new Vector<String>();
 			m.node_file_map.put(m.myName, emptyList);
 			m.startAddRem();
@@ -254,8 +232,7 @@ public class Machine {
 			m.getMemberlistFromIP(args[0]);
 			m.startAddRem();
 		}
-		// r (String s : m.getMemberList())
-		// System.out.println(s);
+
 		m.startFileReplication();
 		
 		try {
@@ -265,13 +242,15 @@ public class Machine {
 			e.printStackTrace();
 		} 
 		
-		
+		//heartbeat sender instance
 		Runnable runnableS = new HeartbeatSender(m);
 		Thread threadS = new Thread(runnableS);
 		threadS.start();
+		//heartbeat receiver instance
 		Runnable runnableR = new HeartbeatReceiver(m);
 		Thread threadR = new Thread(runnableR);
 		threadR.start();
+		//voluntary leave instance
 		Runnable commandC = new VoluntaryLeave(m);
 		Thread threadC = new Thread(commandC);
 		threadC.start();
@@ -284,15 +263,7 @@ public class Machine {
 	public void setmembership_sock(DatagramSocket membership_sock) {
 		this.membership_sock = membership_sock;
 	}
-
-	//public DatagramSocket getOutgoing() {
-	//	return outgoing;
-	//}
-
-	//public void setOutgoing(DatagramSocket outgoing) {
-	//	this.outgoing = outgoing;
-	//}
-
+	
 	public Vector<String> getMemberList() {
 		return memberList;
 	}

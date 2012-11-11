@@ -11,7 +11,12 @@ import java.util.*;
 
 
 
-
+/*
+ * FILEREPLICATOR INSTANCE OF MACHINE CLASS
+ * WILL TAKE CARE OF ALL THE FILE SYSTEM RELATED TASKS
+ * FILE DISTRIBUTION BALANCING
+ * FILE GET, PUT, DELETE
+ */
 public class FileReplication implements Runnable {
 	private Machine m;
 	public FileTransferClient FileClient;
@@ -34,8 +39,6 @@ public class FileReplication implements Runnable {
 	    	ObjectOutputStream oos = new ObjectOutputStream(baos);
 	    	oos.writeObject(msgList);
 	    	oos.flush();
-	    	// get the byte array of the object
-	    	//byte[] Buf= baos.toByteArray();
 	    	mList = baos.toByteArray();
 	    } catch(IOException e) {
 	    	e.printStackTrace();
@@ -467,13 +470,7 @@ public class FileReplication implements Runnable {
 							m.myFileList.remove(removeF);
 							//update local file list
 						}
-						/*else if (recvList.firstElement() == "S")//TODO
-						{
-							// machine receiving setSource msg
-							String sourceFN = ;
-							fileserver.setSource(sourceFN);
-							//update local file list
-						}*/
+
 						else if (recvList.firstElement() == "Q")
 						{
 							// machine receiving REPLICATION_INFO_QUERY

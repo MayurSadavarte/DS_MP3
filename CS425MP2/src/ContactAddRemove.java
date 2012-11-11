@@ -12,7 +12,11 @@ import java.util.HashMap;
 import java.util.Vector;
 
 
-
+/*
+ * CONTACTADDREMOVE INSTNACE OF MACHINE CLASS
+ * THIS WILL TAKE CARE OF ALL THE MEMBERSHIP
+ * LIST RELATED TASKS
+ */
 public class ContactAddRemove implements Runnable {
 	private Machine m;
 
@@ -39,6 +43,37 @@ public class ContactAddRemove implements Runnable {
 	}
 	
 	
+	/*
+	 * get 'String' msg from membership UDP socket
+	 * 
+	 * @return
+	 */
+	public String recvStrMsg() {
+		DatagramPacket recvPacket;
+		String recvMsg = null;
+		byte[] recvData = new byte[1024];
+		//recvPacket = new DatagramPacket(recvData,recvData.length);
+		
+		try {
+			recvPacket = new DatagramPacket(recvData,recvData.length);
+			
+			m.membership_sock.receive(recvPacket);
+			//TODO - need to decide whether we need to define this length or not!!
+			ByteArrayInputStream bais = new ByteArrayInputStream(recvData);
+		
+			ObjectInputStream ois = new ObjectInputStream(bais);
+			recvMsg = (String)ois.readObject();
+			WriteLog.writelog(m.myName, "received from UDP "+recvMsg);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();			
+		}
+		
+		return recvMsg;
+	}
+	
+	
 	
 	public void run(){
 	
@@ -46,7 +81,7 @@ public class ContactAddRemove implements Runnable {
 			String recvMsg;
 			
 				try {
-					recvMsg = m.recvStrMsg();
+					recvMsg = recvStrMsg();
 					
 					Vector<String> memberList = m.getMemberList();
 					WriteLog.printList2Log("Contact", memberList);
@@ -62,12 +97,6 @@ public class ContactAddRemove implements Runnable {
 						
 						if (memberList.contains(ip)) {
 							
-							
-							//String prevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
-							//m.sendMsg(m.membership_sock, prevIP, recvMsg, Machine.MEMBERSHIP_PORT);
-							
-							//String prevprevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
-							//m.sendMsg(m.membership_sock, prevprevIP, recvMsg, Machine.MEMBERSHIP_PORT);
 							String newMaster = null;
 							if (ip == m.masterName)
 							{
@@ -77,8 +106,7 @@ public class ContactAddRemove implements Runnable {
 							}
 							
 							memberList.remove(ip);
-							//int index = memberList.indexOf(m.myName);
-							//String prevIP = memberList.get((index - 1 + memberList.size()) % memberList.size());
+							
 							try {
 								WriteLog.printList2Log(m.myName, memberList);
 								
@@ -98,7 +126,7 @@ public class ContactAddRemove implements Runnable {
 								m.FileReplicator.reformFileInfo();
 							}
 						}
-						//memberList.remove(recvMsg.trim());
+
 						WriteLog.printList2Log("Contact", memberList);
 						
 						if (m.master)
@@ -122,38 +150,25 @@ public class ContactAddRemove implements Runnable {
 					}
 					else if (recvMsg.charAt(0) == 'A')
 					{
-						// received an incoming socket, append ip address to memberlist
-						//String incomingIP = new String(incoming.getData());
+						//received an incoming packet, append ip address to memberlist
+						
 						String ip = (recvMsg.substring(1)).trim();
 														
 						System.out.println(ip);
 						
-						WriteLog.writelog("Contact" ,"received incoming socket, append " + ip);
-						
-						//System.out.println(incomingIP.length());
-						
+						WriteLog.writelog("Machine" ,"received incoming socket, append " + ip);
 						
 						if (!memberList.contains(ip)) {
-							//System.out.println("999999999999!!!!!!!");
 							try {
 								WriteLog.writelog(m.myName, "adddddddddddddd " + ip);
 							} catch (IOException e1) {
 								// TODO Auto-generated catch block
 								e1.printStackTrace();
 							}
-							memberList.add(ip);
-								
-							//int index = m.memberList.indexOf(m.myIP);
-							//String nextIP = m.memberList.get((index + 1) % memberList.size());
-							//m.sendMsg(m.membership_sock, nextIP, recvMsg, Machine.MEMBERSHIP_PORT);
-							
-							//need to review
-							//String nextnextIP = memberList.get((index + 2) % memberList.size());
-							//m.sendMsg(m.membership_sock, nextnextIP, recvMsg, Machine.MEMBERSHIP_PORT);				
+							memberList.add(ip);				
 							
 							try {
 								WriteLog.printList2Log(m.myName, memberList);
-								//WriteLog.writelog(m.myIP, "send to "+nextIP+" msg is " + recvMsg);
 							} catch (IOException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
@@ -162,12 +177,6 @@ public class ContactAddRemove implements Runnable {
 						
 						
 						WriteLog.printList2Log("Contact", memberList);
-						
-						//m.membership_sock.close();
-						
-						//if(memberList.size()>1){
-						//sendAddMsg();
-						//}
 						
 					}
 					else if (m.master)
