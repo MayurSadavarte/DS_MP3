@@ -32,15 +32,17 @@ public class FileTransferClient implements Runnable {
 	*/
 	private String copyFN;
 	private String serverIP;
+	private String sourceFN;
 	
-	public FileTransferClient(String s, String ip){
-		copyFN = s;
+	public FileTransferClient(String copy, String source, String ip){
+		copyFN = copy;
 		serverIP = ip;
+		sourceFN = source;
 	}
 	
 	public void run(){
 		
-		int filesize=6022386; // filesize temporary hardcoded
+		int filesize=Integer.MAX_VALUE; // filesize temporary hardcoded
 
 	    long start = System.currentTimeMillis();
 	    int bytesRead;
@@ -53,6 +55,18 @@ public class FileTransferClient implements Runnable {
 			sock = new Socket(serverIP, Machine.FILE_TRANSFER_PORT);
 			System.out.println("Connecting...");
 			// receive file
+			
+			
+			ObjectOutputStream oos;
+			try {
+				oos = new ObjectOutputStream(sock.getOutputStream());
+				oos.writeObject(sourceFN);
+				oos.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			
 			byte [] mybytearray  = new byte [filesize];
 		    InputStream is;
 			is = sock.getInputStream();

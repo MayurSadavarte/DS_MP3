@@ -190,16 +190,19 @@ public class ContactAddRemove implements Runnable {
 							}
 					
 							if(!m.node_file_map.containsKey(ip))
+							{
 								//TODO - need to decide whether we are going to save the replicated file info while dying 
 								// and then sending it in J message to the master
-								m.node_file_map.put(ip, null);
-							//TODO - need to run balancing algorithm here
+								Vector<String> emptyList = new Vector<String>();
+								m.node_file_map.put(ip, emptyList);
+							
+								//TODO - need to run balancing algorithm here
 								m.FileReplicator.balanceFiles();
-							// get the id's of the files written to this node and then update the file_node_map accordingly
-							// or we could update it inside balanceFiles itself
-							//TODO - need to send out the ADD message to all the nodes
-								m.sendMsgToAllNodes(ip, "ADD");
-
+								// get the id's of the files written to this node and then update the file_node_map accordingly
+								// or we could update it inside balanceFiles itself
+								//TODO - need to send out the ADD message to all the nodes
+								//m.sendMsgToAllNodes(ip, "ADD");
+							}
 						}
 					}
 				} catch (IOException e) {

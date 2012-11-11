@@ -19,7 +19,7 @@ public class HeartbeatSender implements Runnable{
 	{
 		String sendMsg = m.myName;
 		byte[] sendbytes=null;
-		System.out.println("in heartbeat sender: will send" + sendMsg + "in a heartbeat message");
+	//	System.out.println("in heartbeat sender: will send" + sendMsg + "in a heartbeat message");
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 	    try {
 	    	ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -29,7 +29,7 @@ public class HeartbeatSender implements Runnable{
 	    	// get the byte array of the object
 	    	sendbytes= baos.toByteArray();
 	    	//sendMsg = baos.toString();
-	    	System.out.println("in heartbeat sender: will actually send" + sendMsg + "in a heartbeat message");
+	//    	System.out.println("in heartbeat sender: will actually send" + sendMsg + "in a heartbeat message");
 	    } catch(IOException e) {
 	    	e.printStackTrace();
 	    }

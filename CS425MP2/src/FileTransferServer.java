@@ -10,13 +10,6 @@ public class FileTransferServer implements Runnable {
 	
 	public void start()
 	{
-		try {
-			fservSock = new ServerSocket(Machine.FILE_TRANSFER_PORT);
-	    }
-	    catch (IOException e) {
-	        System.out.println(e);
-	    }   
-		
 		Thread server_thread = new Thread(this);
 		server_thread.start();
 	}
@@ -37,38 +30,48 @@ public class FileTransferServer implements Runnable {
 	}
 	*/
 	
-	private String sourceFN;
+	//private String sourceFN;
 	
 	//public FileTransferServer(String s){
 	//	sourceFN = s;
 	//}
 	
+	//public void setSource(String s){
+	//	sourceFN = s;
+	//}
+	
 	public void run(){
 		
-		try{
-			ServerSocket servsock = new ServerSocket(Machine.FILE_TRANSFER_PORT);
-		    
-		      System.out.println("Waiting...");
-
-		      Socket sock = servsock.accept();
-		      System.out.println("Accepted connection : " + sock);
-
-		      // sendfile
-		      File myFile = new File (sourceFN);
-		      byte [] mybytearray  = new byte [(int)myFile.length()];
-		      FileInputStream fis = new FileInputStream(myFile);
-		      BufferedInputStream bis = new BufferedInputStream(fis);
-		      bis.read(mybytearray,0,mybytearray.length);
-		      OutputStream os = sock.getOutputStream();
-		      System.out.println("Sending...");
-		      os.write(mybytearray,0,mybytearray.length);
-		      os.flush();
-		      sock.close();
-		      
-		    
-		}catch (IOException e) {
+		ServerSocket servsock=null;
+		try {
+			servsock = new ServerSocket(Machine.FILE_TRANSFER_PORT);
+		} catch (IOException e1) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			e1.printStackTrace();
+		}
+		
+		while(true){
+		
+			try{
+				
+			    
+			      System.out.println("Waiting...");
+	
+			      Socket sock = servsock.accept();
+			      System.out.println("Accepted connection : " + sock);
+			      
+			      
+			      
+			      FileTransServerThread ftthread = new FileTransServerThread(sock);
+			      ftthread.start();
+			      // sendfile
+			     
+			      
+			    
+			}catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 	
