@@ -32,6 +32,16 @@ public class FileTransServerThread implements Runnable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			  
+			
+			
+			try {
+				String myName = InetAddress.getLocalHost().getHostName();
+				WriteLog.writelog(myName, "sourceFN: "+sourceFN);
+			} catch (UnknownHostException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 		
 		  File myFile = new File (sourceFN);
 	      byte [] mybytearray  = new byte [(int)myFile.length()];
