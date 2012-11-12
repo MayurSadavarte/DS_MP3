@@ -508,7 +508,7 @@ public class FileReplication implements Runnable {
 									m.file_node_map.get(recvList.elementAt(i)).add(recvList.elementAt(1));
 							}
 							recvList.remove(0);
-							String nodeid = recvList.remove(1);
+							String nodeid = recvList.remove(0);
 							m.node_file_map.put(nodeid, recvList);
 						
 							checkReplies.put(nodeid, 1);
