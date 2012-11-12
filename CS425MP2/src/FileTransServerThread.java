@@ -28,6 +28,7 @@ public class FileTransServerThread implements Runnable {
 			  ObjectInputStream ois = new ObjectInputStream(sock.getInputStream());
 			  try {
 				sourceFN = (String) ois.readObject();
+				//ois.close();
 			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -44,16 +45,25 @@ public class FileTransServerThread implements Runnable {
 			}
 		
 		  File myFile = new File (sourceFN);
-	      byte [] mybytearray  = new byte [(int)myFile.length()];
+		  int flength = (int)myFile.length();
+		  int current=0, bytesWritten=0;
+	      byte [] mybytearray  = new byte [4096];
 	      FileInputStream fis = new FileInputStream(myFile);
 	      BufferedInputStream bis = new BufferedInputStream(fis);
-	      bis.read(mybytearray,0,mybytearray.length);
 	      OutputStream os = sock.getOutputStream();
 	      System.out.println("Sending...");
-	      os.write(mybytearray,0,mybytearray.length);
+	      
+	      do {
+	    	  bis.read(mybytearray,0,mybytearray.length);
+	    	  os.write(mybytearray,0,mybytearray.length);
+	    	  bytesWritten = bytesWritten + current;
+	    	  flength = flength - current;
+	      } while(flength > 0);
+	      
+	      
 	      os.flush();
 	      sock.close();
-	      
+	      os.close();
 		  } catch (IOException e) {
 				e.printStackTrace();
 		  }

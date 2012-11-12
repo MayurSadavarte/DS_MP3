@@ -413,9 +413,11 @@ public class FileReplication implements Runnable {
 					if (m.master)
 					{
 						//need to take decision based on the recvMsg opcode
-						if (recvList.firstElement() == "P")
+						System.out.println("filereplication: mastermode");
+						if (recvList.firstElement().equals("P"))
 						{
-							// master receiving PUT
+							System.out.println("filereplication PUT received"); 
+							//master receiving PUT
 							// send copy msg to primary machine and backup machine
 							if(m.file_node_map.containsKey(recvList.elementAt(2))){
 								System.out.println("file already exists");
@@ -451,13 +453,13 @@ public class FileReplication implements Runnable {
 							}
 						
 						}
-						else if (recvList.firstElement() == "G")
+						else if (recvList.firstElement().equals("G"))
 						{
 							// master receiving GET
 							// find primary machine
 							// send setSource msg to primary machine
-							if(!m.file_node_map.containsKey(recvList.lastElement())){
-								System.out.println("file dont exists");
+							if(!m.file_node_map.containsKey(recvList.elementAt(1))){
+								System.out.println("file doesn.t exist");
 							}else{
 								String primaryM = m.file_node_map.get(recvList.elementAt(1)).elementAt(0);
 							
@@ -467,7 +469,7 @@ public class FileReplication implements Runnable {
 								
 							}
 						}
-						else if (recvList.firstElement() == "D")
+						else if (recvList.firstElement().equals("D"))
 						{
 							// master receiving DELETE
 							// find primary machine
@@ -492,7 +494,7 @@ public class FileReplication implements Runnable {
 								e.printStackTrace();
 							}
 						}
-						else if (recvList.firstElement() == "I")
+						else if (recvList.firstElement().equals("I"))
 						{
 							// master receives answer to replication query	
 							Vector<String> repInfo = new Vector<String>();
@@ -521,9 +523,9 @@ public class FileReplication implements Runnable {
 							}
 						}
 					}
-					else
-					{
-						if (recvList.firstElement() == "C")
+					
+					
+						if (recvList.firstElement().equals("C"))
 						{
 						// machine receiving COPY 
 							String copyFN = recvList.elementAt(2);
@@ -541,7 +543,7 @@ public class FileReplication implements Runnable {
 								e.printStackTrace();
 							}
 						}
-						else if (recvList.firstElement() == "R")
+						else if (recvList.firstElement().equals("R"))
 						{
 							// machine receiving REM
 							String removeF = recvList.elementAt(1);//TODO get remove file name 
@@ -556,7 +558,7 @@ public class FileReplication implements Runnable {
 							}
 						}
 
-						else if (recvList.firstElement() == "Q")
+						else if (recvList.firstElement().equals("Q"))
 						{
 							// machine receiving REPLICATION_INFO_QUERY
 							Vector<String> qMsg = new Vector<String>();
@@ -567,7 +569,6 @@ public class FileReplication implements Runnable {
 							
 							sendListMsg(qMsg, recvList.elementAt(1));
 						}
-					}
 					
 				} catch (IOException e) {
 					e.printStackTrace();

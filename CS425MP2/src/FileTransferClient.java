@@ -42,14 +42,20 @@ public class FileTransferClient implements Runnable {
 	
 	public void run(){
 		
-		int filesize=Integer.MAX_VALUE; // filesize temporary hardcoded
+		int fixedsize=4096; // filesize temporary hardcoded
 
 	    long start = System.currentTimeMillis();
-	    int bytesRead;
+	    int bytesRead = 0;
 	    int current = 0;
 	   
 	    Socket sock;
-			    
+	    String myName=null;
+		try {
+			myName = InetAddress.getLocalHost().getHostName();
+		} catch (UnknownHostException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		};
 	    
 		try {
 			sock = new Socket(serverIP, Machine.FILE_TRANSFER_PORT);
@@ -57,7 +63,6 @@ public class FileTransferClient implements Runnable {
 			// receive file
 			
 			try {
-				String myName = InetAddress.getLocalHost().getHostName();
 				WriteLog.writelog(myName, "c:"+copyFN+" s:"+sourceFN+" ip:"+serverIP);
 			} catch (UnknownHostException e1) {
 				// TODO Auto-generated catch block
@@ -70,30 +75,40 @@ public class FileTransferClient implements Runnable {
 			try {
 				oos = new ObjectOutputStream(sock.getOutputStream());
 				oos.writeObject(sourceFN);
-				oos.close();
+				//oos.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 			
 			
-			byte [] mybytearray  = new byte [filesize];
+			byte [] mybytearray  = new byte [fixedsize];
 		    InputStream is;
 			is = sock.getInputStream();
 			FileOutputStream fos = new FileOutputStream(copyFN);
 		    BufferedOutputStream bos = new BufferedOutputStream(fos);
-		    bytesRead = is.read(mybytearray,0,mybytearray.length);
-		    current = bytesRead;
-		    do {
-			       bytesRead =
-			          is.read(mybytearray, current, (mybytearray.length-current));
-			       if(bytesRead >= 0) current += bytesRead;
-			    } while(bytesRead > -1);
+		    //bytesRead = is.read(mybytearray,0,mybytearray.length);
+		    //current = bytesRead;
+		    
+		    try {
 
-			    bos.write(mybytearray, 0 , current);
-			    bos.flush();
+		        while (-1 != (current = is.read(mybytearray, 0, mybytearray.length))) {
+		        	bos.write(mybytearray, 0 , current);
+		        	bytesRead = bytesRead + current;
+		        }
+
+		    } catch (IOException e) {
+		        WriteLog.writelog(myName, "Error with streaming op: " + e.getMessage());
+		        throw (e);
+		    } finally {
+		                    try{
+		           is.close();
+		           bos.flush();
+		           bos.close();
+		                    } catch (Exception e){}//Ignore
+		    }
+
 			    long end = System.currentTimeMillis();
 			    System.out.println(end-start);
-			    bos.close();
 			    sock.close();
 		    
 		} catch (IOException e) {

@@ -69,7 +69,12 @@ public class ContactAddRemove implements Runnable {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();			
 		}
-		
+		try {
+			WriteLog.writelog(m.myName, "received "+recvMsg.toString() +" through "+ Integer.toString(Machine.FILE_OPERATIONS_PORT));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return recvMsg;
 	}
 	
@@ -84,7 +89,7 @@ public class ContactAddRemove implements Runnable {
 					recvMsg = recvStrMsg();
 					
 					Vector<String> memberList = m.getMemberList();
-					WriteLog.printList2Log("Contact", memberList);
+					WriteLog.printList2Log(m.myName, memberList);
 					
 					
 					//need to take decision based on the recvMsg opcode
@@ -93,12 +98,12 @@ public class ContactAddRemove implements Runnable {
 						String ip = recvMsg.substring(1).trim();
 						System.out.println(ip);
 						
-						WriteLog.writelog("Contact" ,"received incoming socket, remove " + ip );
+						WriteLog.writelog(m.myName,"received incoming socket, remove " + ip );
 						
 						if (memberList.contains(ip)) {
 							
 							String newMaster = null;
-							if (ip == m.masterName)
+							if (ip.equals(m.masterName))
 							{
 								int mindex = memberList.indexOf(m.masterName);
 								newMaster = memberList.get((mindex + 1) % memberList.size());
@@ -118,7 +123,7 @@ public class ContactAddRemove implements Runnable {
 							//change the mode
 							//contact all the nodes in the memberlist for file replication info
 							
-							if(m.myName == newMaster)
+							if(m.myName.equals(newMaster))
 							{
 								m.master = true;
 								m.file_node_map = new HashMap<String, Vector<String>>();
@@ -127,7 +132,7 @@ public class ContactAddRemove implements Runnable {
 							}
 						}
 
-						WriteLog.printList2Log("Contact", memberList);
+						WriteLog.printList2Log(m.myName, memberList);
 						
 						if (m.master)
 						{
@@ -156,7 +161,7 @@ public class ContactAddRemove implements Runnable {
 														
 						System.out.println(ip);
 						
-						WriteLog.writelog("Machine" ,"received incoming socket, append " + ip);
+						WriteLog.writelog(m.myName ,"received incoming socket, append " + ip);
 						
 						if (!memberList.contains(ip)) {
 							try {
@@ -176,7 +181,7 @@ public class ContactAddRemove implements Runnable {
 						}
 						
 						
-						WriteLog.printList2Log("Contact", memberList);
+						WriteLog.printList2Log(m.myName, memberList);
 						
 					}
 					else if (m.master)
@@ -184,7 +189,7 @@ public class ContactAddRemove implements Runnable {
 						if (recvMsg.charAt(0) == 'J')
 						{
 							String ip = (recvMsg.substring(1)).trim();
-							WriteLog.writelog("Contact" ,"received incoming socket, join " + ip );
+							WriteLog.writelog(m.myName ,"received incoming socket, join " + ip );
 						
 							if (!memberList.contains(ip)) {
 								//TODO

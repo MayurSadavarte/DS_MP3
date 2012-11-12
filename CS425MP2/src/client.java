@@ -26,6 +26,7 @@ public class client {
 	public static void main(String[] args) throws IOException {
 		
 		//args[0] is the ip address connection to 
+		String masterIP = args[0];
 		
 		try {
 			sock = new DatagramSocket(Machine.FILE_OPERATIONS_PORT);
@@ -61,7 +62,7 @@ public class client {
 				Vector<String> putMsg = new Vector<String>();
 				putMsg.add("P");
 				putMsg.add(cmd.substring(4, cmd.indexOf(' ', 4)));
-				putMsg.add(cmd.substring(cmd.lastIndexOf(' ')));
+				putMsg.add(cmd.substring(cmd.lastIndexOf(' ')+1));
 				putMsg.add(myName);
 				WriteLog.writelog(myName, "sendPutMsg:"+putMsg.elementAt(1)+putMsg.elementAt(2));
 				byte[] mList = null;
@@ -77,7 +78,7 @@ public class client {
 			    	e.printStackTrace();
 			    }
 				
-				//sendMsg(sock, args[0], cmd, Machine.FILE_TRANSFER_PORT);
+				sendMsg(sock, masterIP, mList, Machine.FILE_OPERATIONS_PORT);
 				//String sourceFN = cmd.substring(4, cmd.indexOf(' ', 4));
 				//server.setSource(sourceFN);
 			}
@@ -100,9 +101,9 @@ public class client {
 			    	e.printStackTrace();
 			    }
 				
-				sendMsg(sock, args[0], mList, Machine.FILE_TRANSFER_PORT);
+				sendMsg(sock, masterIP, mList, Machine.FILE_OPERATIONS_PORT);
 				Vector<String> serverIP = recvListMsg();
-				String copyFN = cmd.substring(cmd.lastIndexOf(' '));
+				String copyFN = cmd.substring(cmd.lastIndexOf(' ')+1);
 				
 				Runnable runnable = new FileTransferClient(copyFN, cmd.substring(4, cmd.indexOf(' ', 4)),serverIP.elementAt(0));
 				Thread thread = new Thread(runnable);
@@ -111,7 +112,7 @@ public class client {
 			else if(cmd.startsWith("delete ")){
 				Vector<String> getMsg = new Vector<String>();
 				getMsg.add("D");
-				getMsg.add(cmd.substring(4, cmd.indexOf(' ', 4)));
+				getMsg.add(cmd.substring(7, cmd.indexOf(' ', 4)));
 				WriteLog.writelog(myName, "sendPutMsg:"+getMsg.elementAt(1));
 				byte[] mList = null;
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -126,7 +127,11 @@ public class client {
 			    	e.printStackTrace();
 			    }
 				
-				sendMsg(sock, args[0], mList, Machine.FILE_TRANSFER_PORT);
+				sendMsg(sock, masterIP, mList, Machine.FILE_OPERATIONS_PORT);
+			}
+			else if(cmd.startsWith("updateMaster ")){
+				masterIP = cmd.substring(cmd.lastIndexOf(' ')+1);
+				System.out.println("New master - "+masterIP);
 			}
 			
 		}
