@@ -11,8 +11,6 @@ import java.net.UnknownHostException;
 import java.util.Scanner;
 import java.util.Vector;
 
-import failureDetection_Membership.HeartbeatSender;
-
 
 public class client {
 

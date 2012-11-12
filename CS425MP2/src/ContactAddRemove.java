@@ -63,14 +63,13 @@ public class ContactAddRemove implements Runnable {
 		
 			ObjectInputStream ois = new ObjectInputStream(bais);
 			recvMsg = (String)ois.readObject();
-			WriteLog.writelog(m.myName, "received from UDP "+recvMsg);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();			
 		}
 		try {
-			WriteLog.writelog(m.myName, "received "+recvMsg.toString() +" through "+ Integer.toString(Machine.FILE_OPERATIONS_PORT));
+			WriteLog.writelog(m.myName, "received "+recvMsg +" through "+ Integer.toString(Machine.FILE_OPERATIONS_PORT));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -98,13 +97,14 @@ public class ContactAddRemove implements Runnable {
 						String ip = recvMsg.substring(1).trim();
 						System.out.println(ip);
 						
-						WriteLog.writelog(m.myName,"received incoming socket, remove " + ip );
+						WriteLog.writelog(m.myName,"received REM on incoming socket for- " + ip );
 						
 						if (memberList.contains(ip)) {
 							
 							String newMaster = null;
 							if (ip.equals(m.masterName))
 							{
+								WriteLog.writelog(m.myName,"It appears that Master is dead!!- " + ip );
 								int mindex = memberList.indexOf(m.masterName);
 								newMaster = memberList.get((mindex + 1) % memberList.size());
 								m.masterName = newMaster;
@@ -113,7 +113,7 @@ public class ContactAddRemove implements Runnable {
 							memberList.remove(ip);
 							
 							try {
-								WriteLog.printList2Log(m.myName, memberList);
+								WriteLog.writelog(m.myName, "memberList after REM - "+memberList.toString());
 								
 							} catch (IOException e) {
 								// TODO Auto-generated catch block
@@ -125,14 +125,13 @@ public class ContactAddRemove implements Runnable {
 							
 							if(m.myName.equals(newMaster))
 							{
+								WriteLog.writelog(m.myName,"It appears that I am the new Master now!!");
 								m.master = true;
 								m.file_node_map = new HashMap<String, Vector<String>>();
 								m.node_file_map = new HashMap<String, Vector<String>>();
 								m.FileReplicator.reformFileInfo();
 							}
 						}
-
-						WriteLog.printList2Log(m.myName, memberList);
 						
 						if (m.master)
 						{
@@ -161,11 +160,11 @@ public class ContactAddRemove implements Runnable {
 														
 						System.out.println(ip);
 						
-						WriteLog.writelog(m.myName ,"received incoming socket, append " + ip);
+						WriteLog.writelog(m.myName ,"received incoming socket, ADD " + ip);
 						
 						if (!memberList.contains(ip)) {
 							try {
-								WriteLog.writelog(m.myName, "adddddddddddddd " + ip);
+								WriteLog.writelog(m.myName, "actual adddddddddddddd " + ip);
 							} catch (IOException e1) {
 								// TODO Auto-generated catch block
 								e1.printStackTrace();
@@ -180,16 +179,13 @@ public class ContactAddRemove implements Runnable {
 							}
 						}
 						
-						
-						WriteLog.printList2Log(m.myName, memberList);
-						
 					}
 					else if (m.master)
 					{
 						if (recvMsg.charAt(0) == 'J')
 						{
 							String ip = (recvMsg.substring(1)).trim();
-							WriteLog.writelog(m.myName ,"received incoming socket, join " + ip );
+							WriteLog.writelog(m.myName ,"received incoming socket, JOIN " + ip );
 						
 							if (!memberList.contains(ip)) {
 								//TODO

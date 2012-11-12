@@ -348,6 +348,12 @@ public class FileReplication implements Runnable {
 		// TODO - called when a node recieves R message and now i am the new master
 		// hence i need to reform the file replication info in the maps
 		// check rep_info_reformed after sending the req to all nodes
+		try {
+			WriteLog.writelog(m.myName,"I am the new Master now hence, will reform the ReplicationInfo- ");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		Vector<String> repMsg = new Vector<String>();
 	
 		repMsg.add("Q");
@@ -495,6 +501,12 @@ public class FileReplication implements Runnable {
 						else if (recvList.firstElement().equals("I"))
 						{
 							// master receives answer to replication query	
+							try {
+								WriteLog.writelog(m.myName, "received QUERY_INFO from - "+recvList.elementAt(1));
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 							Vector<String> repInfo = new Vector<String>();
 							for(Integer i=2; i<recvList.size(); i++)
 							{
@@ -529,6 +541,14 @@ public class FileReplication implements Runnable {
 							String copyFN = recvList.elementAt(2);
 							String serverIP = recvList.elementAt(3);//TODO get client ip
 							
+							try {
+								WriteLog.writelog(m.myName, "received COPY, will now start FileTransferClient");
+								WriteLog.writelog(m.myName, "myFileList before COPY - "+m.myFileList.toString());
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							
 							Runnable runnable = new FileTransferClient(copyFN, recvList.elementAt(1), serverIP);
 							Thread thread = new Thread(runnable);
 							thread.start();
@@ -559,6 +579,12 @@ public class FileReplication implements Runnable {
 						else if (recvList.firstElement().equals("Q"))
 						{
 							// machine receiving REPLICATION_INFO_QUERY
+							try {
+								WriteLog.writelog(m.myName, "received QUERY from new Master - "+recvList.elementAt(1));
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 							Vector<String> qMsg = new Vector<String>();
 							qMsg.add("I");
 							qMsg.add(m.myName);

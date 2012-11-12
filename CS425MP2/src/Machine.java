@@ -102,7 +102,7 @@ public class Machine {
 	    
 		try {
 			
-			WriteLog.writelog(myName, "received ML");
+			WriteLog.writelog(myName, "received MemberList");
 			WriteLog.printList2Log(myName, memberList);
 			
 		} catch (IOException e) {
@@ -207,7 +207,7 @@ public class Machine {
 		m.memberList = new Vector<String>();
 		m.myFileList = new Vector<String>();
 		
-		System.out.println("in machine main: program started!!");
+		
 		try {
 			m.membership_sock = new DatagramSocket(Machine.MEMBERSHIP_PORT);
 		} catch (SocketException e) {
@@ -219,6 +219,7 @@ public class Machine {
 		if (m.master)
 		{
 		//TODO - need to review the file_node_map.put call
+			System.out.println("in machine main: program started in 'mastermode'!!");
 			m.masterName = m.myName;
 			m.memberList.add(m.myName);
 			
@@ -228,6 +229,7 @@ public class Machine {
 		}
 		else
 		{
+			System.out.println("in machine main: program started in 'machinemode'!!");
 			m.masterName = args[0];
 			m.getMemberlistFromIP(args[0]);
 			m.startAddRem();
