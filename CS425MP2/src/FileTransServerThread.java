@@ -54,8 +54,8 @@ public class FileTransServerThread implements Runnable {
 	      System.out.println("Sending...");
 	      
 	      do {
-	    	  bis.read(mybytearray,0,mybytearray.length);
-	    	  os.write(mybytearray,0,mybytearray.length);
+	    	  current = bis.read(mybytearray,0,mybytearray.length);
+	    	  os.write(mybytearray,0,current);
 	    	  bytesWritten = bytesWritten + current;
 	    	  flength = flength - current;
 	      } while(flength > 0);

@@ -112,7 +112,7 @@ public class client {
 			else if(cmd.startsWith("delete ")){
 				Vector<String> getMsg = new Vector<String>();
 				getMsg.add("D");
-				getMsg.add(cmd.substring(7, cmd.indexOf(' ', 4)));
+				getMsg.add(cmd.substring(7));
 				WriteLog.writelog(myName, "sendPutMsg:"+getMsg.elementAt(1));
 				byte[] mList = null;
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();

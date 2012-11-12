@@ -18,7 +18,7 @@ public class Machine {
 	public HashMap<String, Vector<String>> file_node_map;
 	public HashMap<String, Vector<String>> node_file_map;
 	public Vector<String> myFileList;
-	public static final int MEMBERSHIP_PORT = 8889;
+	public static final int MEMBERSHIP_PORT = 10001;
 	public static final int FILE_OPERATIONS_PORT = 8891;
 	public static final int FILE_TRANSFER_PORT = 8892;
 	public static final int HEARTBEAT_PORT = 8890;

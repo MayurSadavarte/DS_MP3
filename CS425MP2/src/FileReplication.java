@@ -46,7 +46,7 @@ public class FileReplication implements Runnable {
 		m.sendMsg(m.filerep_sock, nodeName, mList, Machine.FILE_OPERATIONS_PORT);
 		
 		try {
-			WriteLog.writelog(m.myName, "sent "+mList.toString() + " to "+ nodeName);
+			WriteLog.writelog(m.myName, "sent "+msgList.toString() + " to "+ nodeName);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -191,26 +191,24 @@ public class FileReplication implements Runnable {
 				while (m.file_node_map.get(tempKey).size() < min_rep)
 				{
 					Vector<String> nodeList = m.file_node_map.get(tempKey);
-					String targetNode = node_file_keys.firstElement();
+					String targetNode = null;
 					boolean goodNode=false;
-					Integer tmpIndex=0;
-					if(!nodeList.contains(targetNode))
-						goodNode = true;
+
 					while(!goodNode)
 					{	
-						if(tmpIndex != node_file_keys.size()-1)
+						for(String tmpIndex: node_file_keys)
 						{
-							tmpIndex = tmpIndex+1;
-							targetNode=node_file_keys.elementAt(tmpIndex);
-							if(!nodeList.contains(targetNode))
-								goodNode = true;
-						} else {
-							System.out.println("Couldn't find good node for replication in balancing algorithm");
-							targetNode = null;
+							if(!nodeList.contains(tmpIndex))
+							{
+								goodNode=true;
+								targetNode = tmpIndex;
+								break;
+							}
 						}
 					}
 					if(targetNode == null)
 						break;
+					
 					Vector<String> msgList=new Vector<String>();
 					msgList.add("C");
 					msgList.add(tempKey);
@@ -408,7 +406,7 @@ public class FileReplication implements Runnable {
 					
 					//need to review - instead of using local memberlist we can think of using central memberlist and using locks to synchronize
 					Vector<String> memberList = m.getMemberList();
-					WriteLog.printList2Log("Contact", memberList);
+					WriteLog.printList2Log(m.myName, memberList);
 					
 					if (m.master)
 					{
