@@ -45,7 +45,7 @@ public class FileTransServerThread implements Runnable {
 			}
 		
 		  File myFile = new File (sourceFN);
-		  int flength = (int)myFile.length();
+		  long flength = (long)myFile.length();
 		  int current=0, bytesWritten=0;
 	      byte [] mybytearray  = new byte [4096];
 	      FileInputStream fis = new FileInputStream(myFile);
