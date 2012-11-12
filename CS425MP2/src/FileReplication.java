@@ -11,12 +11,17 @@ import java.util.*;
 
 
 
-
+/*
+ * FILEREPLICATOR INSTANCE OF MACHINE CLASS
+ * WILL TAKE CARE OF ALL THE FILE SYSTEM RELATED TASKS
+ * FILE DISTRIBUTION BALANCING
+ * FILE GET, PUT, DELETE
+ */
 public class FileReplication implements Runnable {
 	private Machine m;
 	public FileTransferClient FileClient;
 	public FileTransferServer FileServer;
-	public int min_rep=3;
+	public int min_rep=2;
 	private boolean rep_info_reformed = false;
 	HashMap<String, Integer> checkReplies = new HashMap<String, Integer>();
 	
@@ -34,13 +39,18 @@ public class FileReplication implements Runnable {
 	    	ObjectOutputStream oos = new ObjectOutputStream(baos);
 	    	oos.writeObject(msgList);
 	    	oos.flush();
-	    	// get the byte array of the object
-	    	//byte[] Buf= baos.toByteArray();
 	    	mList = baos.toByteArray();
 	    } catch(IOException e) {
 	    	e.printStackTrace();
 	    }
 		m.sendMsg(m.filerep_sock, nodeName, mList, Machine.FILE_OPERATIONS_PORT);
+		
+		try {
+			WriteLog.writelog(m.myName, "sent "+msgList.toString() + " to "+ nodeName);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	
@@ -62,7 +72,12 @@ public class FileReplication implements Runnable {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();			
 		}
-		
+		try {
+			WriteLog.writelog(m.myName, "received "+returnList.toString() +" through "+ Integer.toString(Machine.FILE_OPERATIONS_PORT));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return(returnList);
 	}
 	
@@ -85,7 +100,12 @@ public class FileReplication implements Runnable {
 						return (firstLength - secondLength);
 					}
 				});
-
+		try {
+			WriteLog.writelog(m.myName, "sorted node_file_map - "+ keys.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return keys;  //TODO need to verify that sorting on tempkeys actually affects also keys
 	
 	}
@@ -109,7 +129,12 @@ public class FileReplication implements Runnable {
 						return (firstLength - secondLength);
 					}
 				});
-
+		try {
+			WriteLog.writelog(m.myName, "sorted file_node_map - "+ keys.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return keys;  //TODO need to verify that sorting on tempkeys actually affects also keys
 	}
 	
@@ -128,6 +153,13 @@ public class FileReplication implements Runnable {
 		actAvg = (float)cumCnt/(float)m.node_file_map.keySet().size();
 		
 		intAvg = (int)actAvg;
+		
+		try {
+			WriteLog.writelog(m.myName, "average number of files per server - "+ Integer.toString(intAvg));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return(intAvg);
 	}
 	
@@ -144,7 +176,14 @@ public class FileReplication implements Runnable {
 		
 		file_node_keys = sort_file_node_map();
 		
-		
+		try {
+			WriteLog.writelog(m.myName, "balancefiles called ");
+			WriteLog.writelog(m.myName, "initial node_file_keys - "+node_file_keys.toString());
+			WriteLog.writelog(m.myName, "initial file_node_keys - "+file_node_keys.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		for(String tempKey: file_node_keys)
 		{
 			if (m.file_node_map.get(tempKey).size() < min_rep)
@@ -152,20 +191,47 @@ public class FileReplication implements Runnable {
 				while (m.file_node_map.get(tempKey).size() < min_rep)
 				{
 					Vector<String> nodeList = m.file_node_map.get(tempKey);
-					String targetNode = node_file_keys.firstElement();
-				
+					String targetNode = null;
+					boolean goodNode=false;
+
+					while(!goodNode)
+					{	
+						for(String tmpIndex: node_file_keys)
+						{
+							if(!nodeList.contains(tmpIndex))
+							{
+								goodNode=true;
+								targetNode = tmpIndex;
+								break;
+							}
+						}
+					}
+					if(targetNode == null)
+						break;
+					
 					Vector<String> msgList=new Vector<String>();
 					msgList.add("C");
-					msgList.add(nodeList.firstElement());
 					msgList.add(tempKey);
-			
+					msgList.add(tempKey);
+					msgList.add(nodeList.firstElement());
+								
 					sendListMsg(msgList, targetNode);
+					
 					m.file_node_map.get(tempKey).add(targetNode);
 					m.node_file_map.get(targetNode).add(tempKey);
+					
 					node_file_keys = sort_node_file_map();
 				}
 			} else
 				break;
+		}
+		
+		try {
+			WriteLog.writelog(m.myName, "balancefiles called, stage one done");
+			WriteLog.writelog(m.myName, "final file_node_keys - "+file_node_keys.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 		int lowAvgFiles = 0;
@@ -173,27 +239,16 @@ public class FileReplication implements Runnable {
 		int highAvgFiles = lowAvgFiles + 1;
 		
 		int firstIndex=0, lastIndex=0;
-		lastIndex = node_file_keys.size();
+		lastIndex = node_file_keys.size()-1;
 		
 		String firstKey = node_file_keys.get(firstIndex);
-		String lastKey = node_file_keys.get(lastIndex-1);  //TODO need to be sure about the maximum index value
+		String lastKey = node_file_keys.get(lastIndex);  //TODO need to be sure about the maximum index value
 		
 		
 		
 		while(m.node_file_map.get(firstKey).size() < lowAvgFiles)
 		{
 			//have removed this 'm.node_file_map.get(lastIndex).size() > highAvgFiles' from the while condition
-			
-			if(m.node_file_map.get(firstKey).size() >= lowAvgFiles)
-			{
-				firstKey = node_file_keys.get(firstIndex+1); //TODO - does mod operation need to be done here?
-				continue;
-			}
-			if(m.node_file_map.get(lastKey).size() <= highAvgFiles)
-			{
-				lastKey = node_file_keys.get(lastIndex-1); //same as TODO above
-				continue;
-			}
 			
 			Vector<String> filesAtLastNode = m.node_file_map.get(node_file_keys.get(lastIndex));
 			String filetoCopy=null;
@@ -215,14 +270,17 @@ public class FileReplication implements Runnable {
 			if (filetoCopy == null)
 			{
 				System.out.println("Couldn't find a file which can be replicated");
+				break;
 			}
 			Vector<String> cpmsgList=new Vector<String>();
 			cpmsgList.add("C");
-			cpmsgList.add(nodetoCopyFrom);
 			cpmsgList.add(filetoCopy);
-	
+			cpmsgList.add(filetoCopy);
+			cpmsgList.add(nodetoCopyFrom);
+			
 			sendListMsg(cpmsgList, firstKey);
-	
+			
+			
 			Vector<String> rmmsgList=new Vector<String>();
 			rmmsgList.add("R");
 			rmmsgList.add(filetoCopy);
@@ -234,8 +292,34 @@ public class FileReplication implements Runnable {
 			m.node_file_map.get(firstKey).add(filetoCopy);
 			m.node_file_map.get(lastKey).remove(filetoCopy);
 		
+
+			if(m.node_file_map.get(firstKey).size() >= lowAvgFiles)
+			{
+				firstIndex=firstIndex+1;
+				if(firstIndex>=lastIndex)
+					break;
+				firstKey = node_file_keys.get(firstIndex); //TODO - does mod operation need to be done here?
+				if(m.node_file_map.get(lastKey).size() <= highAvgFiles)
+				{
+					lastIndex=lastIndex-1;
+					lastKey = node_file_keys.get(lastIndex); //same as TODO above
+				}
+				continue;
+			}
+			if(m.node_file_map.get(lastKey).size() <= highAvgFiles)
+			{
+				lastIndex=lastIndex-1;
+				lastKey = node_file_keys.get(lastIndex); //same as TODO above
+				continue;
+			}
 		}	
-		
+		try {
+			WriteLog.writelog(m.myName, "balancefiles called, stage two done ");
+			WriteLog.writelog(m.myName, "final node_file_keys - "+node_file_keys.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	private Vector<String> sort_checkReplies()
@@ -322,38 +406,58 @@ public class FileReplication implements Runnable {
 					
 					//need to review - instead of using local memberlist we can think of using central memberlist and using locks to synchronize
 					Vector<String> memberList = m.getMemberList();
-					WriteLog.printList2Log("Contact", memberList);
+					WriteLog.printList2Log(m.myName, memberList);
 					
 					if (m.master)
 					{
 						//need to take decision based on the recvMsg opcode
-						if (recvList.firstElement() == "P")
+						System.out.println("filereplication: mastermode");
+						if (recvList.firstElement().equals("P"))
 						{
-							// master receiving PUT
+							System.out.println("filereplication PUT received"); 
+							//master receiving PUT
 							// send copy msg to primary machine and backup machine
-							if(m.file_node_map.containsKey(recvList.lastElement())){
+							if(m.file_node_map.containsKey(recvList.elementAt(2))){
 								System.out.println("file already exists");
 							}else{
 								Vector<String> sortedKey = sort_node_file_map();
 								
 								//m.sendMsg(m.filerep_sock, sortedKey.firstElement(), , portN)
+								Vector<String> cpnodes = new Vector<String>();
 								Vector<String> cpMsg = new Vector<String>();
 								cpMsg.add("C");
 								cpMsg.add(recvList.elementAt(1));
 								cpMsg.add(recvList.elementAt(2));
 								cpMsg.add(recvList.elementAt(3));
 								sendListMsg(cpMsg, sortedKey.elementAt(0));
-								if(sortedKey.size()>1) sendListMsg(cpMsg, sortedKey.elementAt(1));
+								cpnodes.add(sortedKey.elementAt(0));
+								m.node_file_map.get(sortedKey.elementAt(0)).add(recvList.elementAt(2));
+								if(sortedKey.size()>1) 
+								{
+									sendListMsg(cpMsg, sortedKey.elementAt(1));
+									cpnodes.add(sortedKey.elementAt(1));
+									m.node_file_map.get(sortedKey.elementAt(1)).add(recvList.elementAt(2));
+								}
+									
+								m.file_node_map.put(recvList.elementAt(2), cpnodes);
+							
+								try {
+									WriteLog.writelog(m.myName, "node_file_map after PUT - "+m.node_file_map.toString());
+									WriteLog.writelog(m.myName, "file_node_map after PUT - "+m.file_node_map.toString());
+								} catch (IOException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
 							}
 						
 						}
-						else if (recvList.firstElement() == "G")
+						else if (recvList.firstElement().equals("G"))
 						{
 							// master receiving GET
 							// find primary machine
 							// send setSource msg to primary machine
-							if(!m.file_node_map.containsKey(recvList.lastElement())){
-								System.out.println("file dont exists");
+							if(!m.file_node_map.containsKey(recvList.elementAt(1))){
+								System.out.println("file doesn.t exist");
 							}else{
 								String primaryM = m.file_node_map.get(recvList.elementAt(1)).elementAt(0);
 							
@@ -363,22 +467,32 @@ public class FileReplication implements Runnable {
 								
 							}
 						}
-						else if (recvList.firstElement() == "D")
+						else if (recvList.firstElement().equals("D"))
 						{
 							// master receiving DELETE
 							// find primary machine
 							// send remove msg to primary machine and backup machine
 							Vector<String> storeMs = m.file_node_map.get(recvList.elementAt(1));
 							
-							Vector<String> cpMsg = new Vector<String>();
-							cpMsg.add("R");
-							cpMsg.add(recvList.elementAt(1));
+							Vector<String> dMsg = new Vector<String>();
+							dMsg.add("R");
+							dMsg.add(recvList.elementAt(1));
 							
 							for(String key : storeMs)
-								sendListMsg(cpMsg, key);
-							
+							{
+								sendListMsg(dMsg, key);
+								m.node_file_map.get(key).remove(recvList.elementAt(1));
+							}
+							m.file_node_map.remove(recvList.elementAt(1));
+							try {
+								WriteLog.writelog(m.myName, "node_file_map after DELETE - "+m.node_file_map.toString());
+								WriteLog.writelog(m.myName, "file_node_map after DELETE - "+m.file_node_map.toString());
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}
-						else if (recvList.firstElement() == "I")
+						else if (recvList.firstElement().equals("I"))
 						{
 							// master receives answer to replication query	
 							Vector<String> repInfo = new Vector<String>();
@@ -394,15 +508,22 @@ public class FileReplication implements Runnable {
 									m.file_node_map.get(recvList.elementAt(i)).add(recvList.elementAt(1));
 							}
 							recvList.remove(0);
-							String nodeid = recvList.remove(1);
+							String nodeid = recvList.remove(0);
 							m.node_file_map.put(nodeid, recvList);
 						
 							checkReplies.put(nodeid, 1);
+							try {
+								WriteLog.writelog(m.myName, "node_file_map after INFO_QUERY_RESP - "+m.node_file_map.toString());
+								WriteLog.writelog(m.myName, "file_node_map after INFO_QUERY_RESP - "+m.file_node_map.toString());
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}
 					}
-					else
-					{
-						if (recvList.firstElement() == "C")
+					
+					
+						if (recvList.firstElement().equals("C"))
 						{
 						// machine receiving COPY 
 							String copyFN = recvList.elementAt(2);
@@ -412,23 +533,30 @@ public class FileReplication implements Runnable {
 							Thread thread = new Thread(runnable);
 							thread.start();
 							
+							m.myFileList.add(copyFN);
+							try {
+								WriteLog.writelog(m.myName, "myFileList after COPY - "+m.myFileList.toString());
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}
-						else if (recvList.firstElement() == "R")
+						else if (recvList.firstElement().equals("R"))
 						{
 							// machine receiving REM
 							String removeF = recvList.elementAt(1);//TODO get remove file name 
 							File f = new File(removeF);
 							f.delete();
-							//update local file list
+							m.myFileList.remove(removeF);
+							try {
+								WriteLog.writelog(m.myName, "myFileList after REMOVE - "+m.myFileList.toString());
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 						}
-						/*else if (recvList.firstElement() == "S")//TODO
-						{
-							// machine receiving setSource msg
-							String sourceFN = ;
-							fileserver.setSource(sourceFN);
-							//update local file list
-						}*/
-						else if (recvList.firstElement() == "Q")
+
+						else if (recvList.firstElement().equals("Q"))
 						{
 							// machine receiving REPLICATION_INFO_QUERY
 							Vector<String> qMsg = new Vector<String>();
@@ -439,7 +567,6 @@ public class FileReplication implements Runnable {
 							
 							sendListMsg(qMsg, recvList.elementAt(1));
 						}
-					}
 					
 				} catch (IOException e) {
 					e.printStackTrace();
